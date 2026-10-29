@@ -1,0 +1,6 @@
+### Table Template (for copying into email or documents)
+
+| Full Name | Work Email (Microsoft Sign-In) | Staff or Client | Role Requested | Scope (`FIRM_WIDE` / Client Name / Engagement Code) | Start Date | Expiry (if temp) | Approved By | Notes |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| *Example: Jane Doe* | `jane.doe@example.com` | Staff | `ENGAGEMENT_PARTNER` | Client: Acme Corp | 2026-11-01 | *Permanent* | Firm Managing Partner | Engagement Signing Partner |
+| *Example: John Smith* | `john.smith@client.com` | Client | `CLIENT_PRIMARY` | Client: Acme Corp | 2026-11-01 | *Permanent* | Jane Doe (Partner) | CFO / Primary Signatory |

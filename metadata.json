@@ -1,0 +1,6 @@
+{
+  "name": "AuditSphere — Roles & Access End-User Guide",
+  "description": "Interactive end-user and Administrator guide to AuditSphere user roles, scopes, separation of duties, lifecycle responsibilities, and role assignment requests.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

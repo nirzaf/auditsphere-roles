@@ -1,0 +1,12 @@
+Full name,Work email (the exact account used for Microsoft sign-in),Staff or Client,Role requested,Scope (Firm-wide / which Client / which Engagement / which Group),Start date,Expiry (if temporary),Approved by,Notes
+Amira Al-Mansoor,amira.almansoor@example.com,Staff,Partner,Firm-wide,2026-11-01,,managing.partner@example.com,Engagement Partner signing authority and Key 2 risk clearance
+Tariq Haddad,tariq.haddad@example.com,Staff,Manager,Client: Gulf Horizon Trading LLC (CLI-2026-014),2026-11-01,,amira.almansoor@example.com,Audit Manager overseeing FY2026 statutory audit and accounting review
+Lina Khoury,lina.khoury@example.com,Staff,Senior,Engagement: Gulf Horizon FY2026 Statutory Audit (ENG-2026-042),2026-11-01,2027-03-31T18:00:00Z,tariq.haddad@example.com,Fieldwork lead through Q1 filing deadline
+Rami Saleh,rami.saleh@example.com,Staff,Staff,Engagement: Gulf Horizon FY2026 Statutory Audit (ENG-2026-042),2026-11-01,2027-02-28T18:00:00Z,tariq.haddad@example.com,Assigned to cash and receivables working papers
+Nadia Farouk,nadia.farouk@example.com,Staff,RelationshipManager,Firm-wide,2026-11-01,,amira.almansoor@example.com,Commercial pipeline and proposal preparation
+Karim Mansour,karim.mansour@example.com,Staff,FinanceManager,Firm-wide,2026-11-01,,amira.almansoor@example.com,Firm billing preparation and firm ledger journals
+Salma Darwish,salma.darwish@example.com,Staff,FinanceReviewer,Firm-wide,2026-11-01,,amira.almansoor@example.com,Independent maker-checker reviewer for firm invoices and journals
+Youssef Nassar,youssef.nassar@example.com,Staff,AccountingPreparer,Group: Gulf Horizon Holdings Group (GRP-2026-003),2026-11-01,,tariq.haddad@example.com,Group consolidation preparation (Note: Group grants do not support an expiry date)
+Huda Zaki,huda.zaki@example.com,Staff,AccountingReviewer,Client: Gulf Horizon Trading LLC (CLI-2026-014),2026-11-01,,tariq.haddad@example.com,Independent reviewer for trial balance mappings and financial packages
+Omar Barakat,omar.barakat@example.com,Staff,Administrator,Firm-wide,2026-11-01,,managing.partner@example.com,Users & Access administration and audited read-only oversight (no Partner authority)
+Layla Nasser,layla.nasser@example.com,Client,ClientUser,Engagement: Gulf Horizon FY2026 Statutory Audit (ENG-2026-042),2026-11-01,2027-04-30T18:00:00Z,amira.almansoor@example.com,Client Finance Lead — primary contact for PBC evidence uploads and LOR response

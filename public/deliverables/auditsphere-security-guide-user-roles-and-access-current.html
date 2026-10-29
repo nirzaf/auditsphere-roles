@@ -1,0 +1,1840 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AuditSphere — Roles &amp; Access End-User Guide</title>
+  <meta name="description" content="End-user and Administrator guide to AuditSphere user roles, scopes, separation of duties, engagement lifecycle responsibilities, and access requests." />
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-alt: #f1f5f9;
+      --surface-callout: #eff6ff;
+      --surface-warn: #fefce8;
+      --text: #0f172a;
+      --text-secondary: #334155;
+      --text-muted: #475569;
+      --border: #cbd5e1;
+      --border-strong: #64748b;
+      --accent: #005a9e;
+      --accent-strong: #003b6d;
+      --accent-soft: #e0f2fe;
+      --ok-bg: #ecfdf5;
+      --ok-text: #065f46;
+      --ok-border: #059669;
+      --approval-bg: #fffbeb;
+      --approval-text: #78350f;
+      --approval-border: #d97706;
+      --view-bg: #f0f9ff;
+      --view-text: #075985;
+      --view-border: #0284c7;
+      --none-bg: #f1f5f9;
+      --none-text: #475569;
+      --none-border: #94a3b8;
+      --shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+      --radius: 8px;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0b1120;
+        --surface: #111827;
+        --surface-alt: #1e293b;
+        --surface-callout: #172554;
+        --surface-warn: #2e2606;
+        --text: #f8fafc;
+        --text-secondary: #cbd5e1;
+        --text-muted: #94a3b8;
+        --border: #334155;
+        --border-strong: #64748b;
+        --accent: #56b4e9;
+        --accent-strong: #93c5fd;
+        --accent-soft: #1e3a8a;
+        --ok-bg: #064e3b;
+        --ok-text: #d1fae5;
+        --ok-border: #34d399;
+        --approval-bg: #451a03;
+        --approval-text: #fef3c7;
+        --approval-border: #f59e0b;
+        --view-bg: #0c4a6e;
+        --view-text: #e0f2fe;
+        --view-border: #38bdf8;
+        --none-bg: #1e293b;
+        --none-text: #cbd5e1;
+        --none-border: #64748b;
+        --shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+      }
+    }
+
+    html[data-theme="dark"] {
+      --bg: #0b1120;
+      --surface: #111827;
+      --surface-alt: #1e293b;
+      --surface-callout: #172554;
+      --surface-warn: #2e2606;
+      --text: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --border-strong: #64748b;
+      --accent: #56b4e9;
+      --accent-strong: #93c5fd;
+      --accent-soft: #1e3a8a;
+      --ok-bg: #064e3b;
+      --ok-text: #d1fae5;
+      --ok-border: #34d399;
+      --approval-bg: #451a03;
+      --approval-text: #fef3c7;
+      --approval-border: #f59e0b;
+      --view-bg: #0c4a6e;
+      --view-text: #e0f2fe;
+      --view-border: #38bdf8;
+      --none-bg: #1e293b;
+      --none-text: #cbd5e1;
+      --none-border: #64748b;
+      --shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    a:hover, a:focus-visible {
+      color: var(--accent-strong);
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.9em;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      word-break: break-word;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      background: var(--accent);
+      color: #ffffff;
+      padding: 0.5rem 1rem;
+      z-index: 1000;
+    }
+
+    .skip-link:focus {
+      left: 0.5rem;
+      top: 0.5rem;
+    }
+
+    .top-bar {
+      background: var(--surface);
+      border-bottom: 2px solid var(--border);
+      padding: 0.85rem 1.25rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+
+    .top-bar-inner {
+      max-width: 1380px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .badge-pill {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.15rem 0.55rem;
+      border-radius: 4px;
+      background: var(--accent-soft);
+      color: var(--text);
+      border: 1px solid var(--accent);
+    }
+
+    .toolbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .btn {
+      appearance: none;
+      background: var(--surface-alt);
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn:hover, .btn:focus-visible {
+      border-color: var(--accent);
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+
+    .layout-container {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 1.25rem;
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 1.75rem;
+      align-items: start;
+    }
+
+    .toc-sidebar {
+      position: sticky;
+      top: 4.5rem;
+      max-height: calc(100vh - 5.5rem);
+      overflow-y: auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      box-shadow: var(--shadow);
+    }
+
+    .toc-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin: 0 0 0.65rem 0;
+    }
+
+    .toc-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .toc-list a {
+      display: block;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      padding: 0.3rem 0.5rem;
+      border-radius: 4px;
+      border-left: 3px solid transparent;
+    }
+
+    .toc-list a:hover, .toc-list a:focus-visible {
+      background: var(--surface-alt);
+      color: var(--text);
+      border-left-color: var(--accent);
+    }
+
+    main {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1.75rem;
+    }
+
+    section.card-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      margin: 0 0 0.5rem 0;
+      line-height: 1.25;
+    }
+
+    h2 {
+      font-size: 1.35rem;
+      margin: 0 0 0.85rem 0;
+      padding-bottom: 0.45rem;
+      border-bottom: 2px solid var(--border);
+      color: var(--text);
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      margin: 1.15rem 0 0.5rem 0;
+      color: var(--text);
+    }
+
+    p {
+      margin: 0 0 0.85rem 0;
+      color: var(--text-secondary);
+    }
+
+    .action-box {
+      background: var(--surface-callout);
+      border: 2px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .action-box h2 {
+      border-bottom: none;
+      padding-bottom: 0;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+    }
+
+    .warn-box {
+      background: var(--surface-warn);
+      border-left: 4px solid #d97706;
+      padding: 0.85rem 1rem;
+      border-radius: 4px;
+      margin: 0.85rem 0;
+    }
+
+    .diagram-figure {
+      margin: 1.25rem 0;
+      padding: 1rem;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      text-align: center;
+      overflow-x: auto;
+    }
+
+    .diagram-figure svg {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .diagram-caption {
+      margin-top: 0.75rem;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      margin: 0.85rem 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 0.6rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--surface-alt);
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    details.role-card {
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      margin-bottom: 0.85rem;
+      background: var(--surface);
+      overflow: hidden;
+    }
+
+    details.role-card summary {
+      padding: 0.85rem 1rem;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      background: var(--surface-alt);
+      color: var(--text);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      list-style: none;
+    }
+
+    details.role-card summary::-webkit-details-marker {
+      display: none;
+    }
+
+    details.role-card summary::before {
+      content: "▸ ";
+      font-weight: 700;
+      margin-right: 0.35rem;
+    }
+
+    details.role-card[open] summary::before {
+      content: "▾ ";
+    }
+
+    details.role-card summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+
+    .role-card-body {
+      padding: 1rem 1.25rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .role-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 0.85rem;
+      margin-top: 0.5rem;
+    }
+
+    .role-field {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem;
+    }
+
+    .role-field strong {
+      display: block;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--text);
+      margin-bottom: 0.3rem;
+    }
+
+    .cell-badge {
+      display: inline-block;
+      font-weight: 700;
+      font-size: 0.78rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      margin-bottom: 0.25rem;
+    }
+
+    .cell-full {
+      background: var(--ok-bg);
+      color: var(--ok-text);
+      border: 1px solid var(--ok-border);
+    }
+
+    .cell-approval {
+      background: var(--approval-bg);
+      color: var(--approval-text);
+      border: 1px solid var(--approval-border);
+    }
+
+    .cell-view {
+      background: var(--view-bg);
+      color: var(--view-text);
+      border: 1px solid var(--view-border);
+    }
+
+    .cell-none {
+      background: var(--none-bg);
+      color: var(--none-text);
+      border: 1px solid var(--none-border);
+    }
+
+    .admin-appendix {
+      border: 2px dashed var(--accent);
+      background: var(--surface);
+    }
+
+    @media (max-width: 960px) {
+      .layout-container {
+        grid-template-columns: 1fr;
+        padding: 0.75rem;
+      }
+      .toc-sidebar {
+        position: static;
+        max-height: none;
+      }
+      section.card-section {
+        padding: 1rem;
+      }
+    }
+
+    @media (max-width: 420px) {
+      html, body {
+        font-size: 15px;
+      }
+      .top-bar {
+        padding: 0.65rem 0.75rem;
+      }
+      .layout-container {
+        padding: 0.5rem;
+        gap: 1rem;
+      }
+      section.card-section {
+        padding: 0.85rem;
+      }
+      .role-meta-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      .top-bar, .toc-sidebar, .no-print {
+        display: none !important;
+      }
+      .layout-container {
+        display: block;
+        max-width: 100%;
+        padding: 0;
+      }
+      section.card-section {
+        box-shadow: none;
+        border: 1px solid #000;
+        margin-bottom: 1rem;
+        page-break-inside: avoid;
+      }
+      details.role-card {
+        border: 1px solid #000;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <header class="top-bar">
+    <div class="top-bar-inner">
+      <div>
+        <p class="brand-title">
+          <span>AuditSphere — Roles &amp; Access End-User Guide</span>
+          <span class="badge-pill">10-Minute Read</span>
+        </p>
+      </div>
+      <div class="toolbar-actions no-print">
+        <button type="button" class="btn" id="btn-expand-all">Expand All Roles</button>
+        <button type="button" class="btn" id="btn-collapse-all">Collapse All Roles</button>
+        <button type="button" class="btn" id="btn-theme-toggle" aria-label="Toggle light or dark color theme">Toggle Dark / Light Theme</button>
+        <button type="button" class="btn" onclick="window.print()">Print / Save PDF</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout-container">
+    <nav class="toc-sidebar" aria-label="Table of contents">
+      <p class="toc-title">Contents (13 Sections)</p>
+      <ul class="toc-list">
+        <li><a href="#sec-1">1. What we need from you</a></li>
+        <li><a href="#sec-2">2. 60-second overview</a></li>
+        <li><a href="#sec-3">3. Role plus scope</a></li>
+        <li><a href="#sec-4">4. Role cards (11 roles)</a></li>
+        <li><a href="#sec-5">5. Lifecycle responsibilities</a></li>
+        <li><a href="#sec-6">6. Approvals &amp; separation of duties</a></li>
+        <li><a href="#sec-7">7. Role vs capability matrix</a></li>
+        <li><a href="#sec-8">8. Which role should they have?</a></li>
+        <li><a href="#sec-9">9. How to fill in the request form</a></li>
+        <li><a href="#sec-10">10. What happens after you reply</a></li>
+        <li><a href="#sec-11">11. Changing or removing access</a></li>
+        <li><a href="#sec-12">12. FAQ &amp; Glossary</a></li>
+        <li><a href="#sec-13">13. Appendices (Admin &amp; Evidence)</a></li>
+      </ul>
+    </nav>
+
+    <main id="main-content">
+      <!-- SECTION 1 -->
+      <section class="card-section" id="sec-1">
+        <h1>AuditSphere Roles &amp; Access — End-User Guide</h1>
+        <p>This guide explains every user role in AuditSphere, what each role can and cannot do, how separation of duties works, and how to tell us which work email addresses should hold each role.</p>
+
+        <div class="action-box" role="region" aria-label="What we need from you">
+          <h2>1. What we need from you</h2>
+          <p><strong>Action Required:</strong> After reading this 10-minute guide, please reply with the <strong>exact Microsoft sign-in work email address</strong> for each person in your firm or client finance team who needs access, using the 9-column request table in <a href="#sec-9">Section 9</a> (or the companion CSV file <code>auditsphere-security-template-role-assignment-request.csv</code>).</p>
+          <ul>
+            <li><strong>Where to send your completed list:</strong> <code>[insert recipient email / secure onboarding inbox, e.g., auditsphere-access@example.com]</code></li>
+            <li><strong>Target reply deadline:</strong> <code>[insert target date, e.g., DD Month YYYY by 17:00]</code></li>
+            <li><strong>Non-negotiable separation-of-duties rule:</strong> Every person who prepares work (audit procedures, trial-balance mappings, adjustment journals, financial packages, or firm invoices) <strong>must have a different person</strong> assigned to review or approve that work. One person cannot approve their own preparation, even if granted two roles.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- SECTION 2 -->
+      <section class="card-section" id="sec-2">
+        <h2>2. 60-second overview</h2>
+        <p>AuditSphere separates internal staff delivery from external client collaboration across <strong>two distinct portals</strong>:</p>
+        <ul>
+          <li><strong>Staff Workspace (<code>/app</code>):</strong> For internal firm partners, managers, auditors, client accountants, commercial relationship managers, firm finance staff, and administrators.</li>
+          <li><strong>Client Portal (<code>/portal</code>):</strong> For external client finance contacts (<code>ClientUser</code>) to upload Provided by Client (PBC) audit documents, reply to queries, and respond to proposed management adjustment journals and financial packages.</li>
+        </ul>
+        <p>Everyone signs in with their <strong>Microsoft work account (Microsoft Entra ID)</strong>. Signing in proves identity, but opens nothing until an AuditSphere <strong>Administrator</strong> records a <strong>Role Grant</strong> combining a <strong>Role</strong> (what they do) and a <strong>Scope</strong> (which clients, engagements, or consolidation groups they may access).</p>
+
+        <figure class="diagram-figure">
+          <svg viewBox="0 0 760 540" role="img" aria-labelledby="diag-a-title diag-a-desc">
+            <title id="diag-a-title">Diagram A: How Sign-In, Role Grants, and the Two Portals Fit Together</title>
+            <desc id="diag-a-desc">Vertical flowchart from top to bottom: A Staff Member or Client Contact signs in with their Microsoft Work Account. The AuditSphere Server checks the active Role Grant and Scope assigned by an Administrator. Staff accounts route to the Staff Workspace (/app), while Client accounts pass through the 4 Client Onboarding Gates before entering the Client Portal (/portal).</desc>
+            <defs>
+              <marker id="arrow-a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155" />
+              </marker>
+            </defs>
+            <!-- Node 1: Actor -->
+            <rect x="60" y="20" width="280" height="58" rx="28" fill="#E69F00" stroke="#7A5200" stroke-width="2"/>
+            <text x="200" y="45" text-anchor="middle" font-size="13" font-weight="700" fill="#000000">[Actor] Staff Member or Client Contact</text>
+            <text x="200" y="64" text-anchor="middle" font-size="12" fill="#000000">Uses corporate Microsoft work email</text>
+
+            <!-- Node 2: Admin -->
+            <rect x="420" y="20" width="280" height="58" rx="28" fill="#CC79A7" stroke="#5E2B47" stroke-width="2"/>
+            <text x="560" y="45" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">[Actor] AuditSphere Administrator</text>
+            <text x="560" y="64" text-anchor="middle" font-size="12" fill="#FFFFFF">Binds roster identity &amp; assigns Role + Scope</text>
+
+            <!-- Node 3: Microsoft Entra ID -->
+            <rect x="60" y="118" width="280" height="60" rx="8" fill="#56B4E9" stroke="#004C70" stroke-width="2"/>
+            <text x="200" y="144" text-anchor="middle" font-size="13" font-weight="700" fill="#000000">[Identity] Microsoft Entra ID Sign-In</text>
+            <text x="200" y="164" text-anchor="middle" font-size="12" fill="#000000">Verifies work account token (no password in app)</text>
+
+            <!-- Node 4: Server Authorization Gate -->
+            <polygon points="380,210 660,255 380,300 100,255" fill="#F0E442" stroke="#6B6200" stroke-width="2"/>
+            <text x="380" y="250" text-anchor="middle" font-size="13" font-weight="700" fill="#000000">[Server Gate] Active Role Grant + Scope Check</text>
+            <text x="380" y="268" text-anchor="middle" font-size="11.5" fill="#000000">Verifies Status != DISABLED, SessionEpoch &amp; Unexpired Grant</text>
+
+            <!-- Node 5: Staff Workspace -->
+            <rect x="40" y="360" width="310" height="84" rx="8" fill="#009E73" stroke="#004D38" stroke-width="2"/>
+            <text x="195" y="388" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">[Staff Portal /app] Staff Workspace</text>
+            <text x="195" y="408" text-anchor="middle" font-size="12" fill="#FFFFFF">10 Staff Roles (Partner, Manager, Senior, Staff,</text>
+            <text x="195" y="426" text-anchor="middle" font-size="12" fill="#FFFFFF">CRM, Finance, Accounting, Administrator)</text>
+
+            <!-- Node 6: Client Onboarding Gate -->
+            <rect x="410" y="340" width="310" height="72" rx="8" fill="#F0E442" stroke="#6B6200" stroke-width="2"/>
+            <text x="565" y="365" text-anchor="middle" font-size="12.5" font-weight="700" fill="#000000">[Gate] Client Onboarding &amp; Terms Gate</text>
+            <text x="565" y="383" text-anchor="middle" font-size="11.5" fill="#000000">Key 1 + Key 2 + 50% Advance PAID + Partner Activation</text>
+            <text x="565" y="400" text-anchor="middle" font-size="11.5" fill="#000000">+ First Sign-In Security Terms (PORTAL-SECURITY-2026-1)</text>
+
+            <!-- Node 7: Client Portal -->
+            <rect x="410" y="445" width="310" height="75" rx="8" fill="#0072B2" stroke="#003654" stroke-width="2"/>
+            <text x="565" y="472" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">[Client Portal /portal] Client Workspace</text>
+            <text x="565" y="492" text-anchor="middle" font-size="12" fill="#FFFFFF">ClientUser Role Only (CLIENT or ENGAGEMENT)</text>
+            <text x="565" y="509" text-anchor="middle" font-size="11.5" fill="#FFFFFF">PBC Uploads, Replies, Delegation &amp; Mgmt Packages</text>
+
+            <!-- Connectors -->
+            <line x1="200" y1="78" x2="200" y2="114" stroke="#334155" stroke-width="2" marker-end="url(#arrow-a)"/>
+            <line x1="200" y1="178" x2="310" y2="225" stroke="#334155" stroke-width="2" marker-end="url(#arrow-a)"/>
+            <line x1="560" y1="78" x2="450" y2="225" stroke="#334155" stroke-width="2" marker-end="url(#arrow-a)"/>
+            <line x1="290" y1="285" x2="195" y2="355" stroke="#334155" stroke-width="2" marker-end="url(#arrow-a)"/>
+            <text x="190" y="325" font-size="11.5" font-weight="700" fill="#334155">Account = STAFF</text>
+            <line x1="470" y1="285" x2="565" y2="335" stroke="#334155" stroke-width="2" marker-end="url(#arrow-a)"/>
+            <text x="530" y="320" font-size="11.5" font-weight="700" fill="#334155">Account = CLIENT</text>
+            <line x1="565" y1="412" x2="565" y2="440" stroke="#334155" stroke-width="2" marker-end="url(#arrow-a)"/>
+          </svg>
+          <figcaption class="diagram-caption">Diagram A: Microsoft sign-in verifies identity; the AuditSphere server checks the Administrator-assigned Role and Scope before opening either the Staff Workspace or the Client Portal.</figcaption>
+        </figure>
+      </section>
+
+      <!-- SECTION 3 -->
+      <section class="card-section" id="sec-3">
+        <h2>3. Role plus scope</h2>
+        <p>Every access grant pairs a <strong>Role</strong> (who the person is and what actions they can perform) with a <strong>Scope</strong> (where they are permitted to act):</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Scope Code</th>
+                <th>Plain-English Meaning</th>
+                <th>Example</th>
+                <th>Strict Boundary (What It Never Covers)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>FIRM_WIDE</code></td>
+                <td>Across your firm's eligible portfolio for that role. Required for firm administration, firm ledger books, and CRM pipeline management.</td>
+                <td>Amira holds <code>Partner</code> at <code>FIRM_WIDE</code>; Omar holds <code>Administrator</code> at <code>FIRM_WIDE</code>.</td>
+                <td>Never allowed for <code>ClientUser</code>. Does not grant other roles or cross-firm access.</td>
+              </tr>
+              <tr>
+                <td><code>CLIENT</code></td>
+                <td>One specific client company and its engagements (where the operation accepts client-level scope).</td>
+                <td>Tariq holds <code>Manager</code> on <strong>Client: Gulf Horizon Trading LLC</strong>.</td>
+                <td>Cannot view or act on any sibling client company or firm-wide ledger/admin screens.</td>
+              </tr>
+              <tr>
+                <td><code>ENGAGEMENT</code></td>
+                <td>One specific audit or accounting engagement. The server resolves the parent client link from stored database records.</td>
+                <td>Lina holds <code>Senior</code> on <strong>Engagement: Gulf Horizon FY2026 Statutory Audit</strong>.</td>
+                <td>Cannot see other engagements of the same client (such as FY2025 Audit or Tax Advisory).</td>
+              </tr>
+              <tr>
+                <td><code>GROUP</code></td>
+                <td>One corporate consolidation group via a dedicated <code>GroupAccessGrant</code>.</td>
+                <td>Youssef holds <code>AccountingPreparer</code> on <strong>Group: Gulf Horizon Holdings Group</strong>.</td>
+                <td>Cannot have an expiry date; forbidden for <code>Senior</code>, <code>RelationshipManager</code>, and <code>ClientUser</code>; does not open standalone subsidiary client books.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <figure class="diagram-figure">
+          <svg viewBox="0 0 760 440" role="img" aria-labelledby="diag-b-title diag-b-desc">
+            <title id="diag-b-title">Diagram B: How Scopes Nest (Firm &gt; Client &gt; Engagement) vs. Separate Group Scope</title>
+            <desc id="diag-b-desc">Vertical hierarchy diagram showing Firm-Wide scope at top covering Client A and Client B, Client A covering Engagement A1 and Engagement A2, and a separate Group Consolidation scope that connects only to approved group reporting inputs without opening standalone client books.</desc>
+            <defs>
+              <marker id="arrow-b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155" />
+              </marker>
+            </defs>
+            <!-- Firm Wide -->
+            <rect x="60" y="20" width="400" height="64" rx="8" fill="#0072B2" stroke="#003654" stroke-width="2"/>
+            <text x="260" y="47" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">[Scope: FIRM_WIDE] Firm Portfolio &amp; Firm Operations</text>
+            <text x="260" y="67" text-anchor="middle" font-size="12" fill="#FFFFFF">Staff roles only — required for Users &amp; Access, Firm Books &amp; CRM Pipeline</text>
+
+            <!-- Client A & Client B -->
+            <rect x="40" y="140" width="240" height="68" rx="8" fill="#56B4E9" stroke="#004C70" stroke-width="2"/>
+            <text x="160" y="167" text-anchor="middle" font-size="12.5" font-weight="700" fill="#000000">[Scope: CLIENT] Client A</text>
+            <text x="160" y="186" text-anchor="middle" font-size="11.5" fill="#000000">Gulf Horizon Trading LLC</text>
+            <text x="160" y="201" text-anchor="middle" font-size="11" fill="#000000">(Covers Client A &amp; its engagements)</text>
+
+            <rect x="300" y="140" width="200" height="68" rx="8" fill="#D55E00" stroke="#6E3000" stroke-width="2" stroke-dasharray="5,4"/>
+            <text x="400" y="167" text-anchor="middle" font-size="12.5" font-weight="700" fill="#FFFFFF">[Scope: CLIENT] Client B</text>
+            <text x="400" y="186" text-anchor="middle" font-size="11.5" fill="#FFFFFF">Atlas Logistics Co.</text>
+            <text x="400" y="201" text-anchor="middle" font-size="11" fill="#FFFFFF">(Isolated from Client A grants)</text>
+
+            <!-- Engagement A1 & A2 -->
+            <rect x="20" y="275" width="220" height="72" rx="8" fill="#009E73" stroke="#004D38" stroke-width="2"/>
+            <text x="130" y="300" text-anchor="middle" font-size="12.5" font-weight="700" fill="#FFFFFF">[Scope: ENGAGEMENT] Eng A1</text>
+            <text x="130" y="318" text-anchor="middle" font-size="11.5" fill="#FFFFFF">FY2026 Statutory Audit</text>
+            <text x="130" y="335" text-anchor="middle" font-size="11" fill="#FFFFFF">(Isolated to this single project)</text>
+
+            <rect x="260" y="275" width="220" height="72" rx="8" fill="#D55E00" stroke="#6E3000" stroke-width="2" stroke-dasharray="5,4"/>
+            <text x="370" y="300" text-anchor="middle" font-size="12.5" font-weight="700" fill="#FFFFFF">[Scope: ENGAGEMENT] Eng A2</text>
+            <text x="370" y="318" text-anchor="middle" font-size="11.5" fill="#FFFFFF">FY2025 Audit (Prior Year)</text>
+            <text x="370" y="335" text-anchor="middle" font-size="11" fill="#FFFFFF">(Blocked for Eng A1-only grants)</text>
+
+            <!-- Group Scope -->
+            <rect x="520" y="140" width="220" height="140" rx="8" fill="#CC79A7" stroke="#5E2B47" stroke-width="2"/>
+            <text x="630" y="168" text-anchor="middle" font-size="12.5" font-weight="700" fill="#FFFFFF">[Scope: GROUP]</text>
+            <text x="630" y="188" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">Gulf Horizon Holdings Group</text>
+            <text x="630" y="210" text-anchor="middle" font-size="11" fill="#FFFFFF">Separate GroupAccessGrant</text>
+            <text x="630" y="228" text-anchor="middle" font-size="11" fill="#FFFFFF">• No expiry date supported</text>
+            <text x="630" y="246" text-anchor="middle" font-size="11" fill="#FFFFFF">• No Senior / CRM / ClientUser</text>
+            <text x="630" y="264" text-anchor="middle" font-size="11" fill="#FFFFFF">• Does not open Client A books</text>
+
+            <!-- Arrows -->
+            <line x1="200" y1="84" x2="160" y2="135" stroke="#334155" stroke-width="2" marker-end="url(#arrow-b)"/>
+            <line x1="320" y1="84" x2="400" y2="135" stroke="#334155" stroke-width="2" marker-end="url(#arrow-b)"/>
+            <line x1="140" y1="208" x2="130" y2="270" stroke="#334155" stroke-width="2" marker-end="url(#arrow-b)"/>
+            <line x1="190" y1="208" x2="340" y2="270" stroke="#334155" stroke-width="2" marker-end="url(#arrow-b)"/>
+            <line x1="520" y1="200" x2="285" y2="180" stroke="#334155" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#arrow-b)"/>
+          </svg>
+          <figcaption class="diagram-caption">Diagram B: FIRM_WIDE, CLIENT, and ENGAGEMENT follow your client-and-project hierarchy, while GROUP is a separate consolidation grant that never opens standalone subsidiary client books.</figcaption>
+        </figure>
+      </section>
+
+      <!-- SECTION 4 -->
+      <section class="card-section" id="sec-4">
+        <h2>4. Role cards (all 11 assignable roles)</h2>
+        <p>Click any role card below to view its 9 standard attributes (summary &amp; titles, daily responsibilities, what they can do, what they cannot do, decisions they own, handoffs, scope options, screens, and how access ends).</p>
+
+        <!-- 1. Partner -->
+        <details class="role-card" open>
+          <summary>
+            <span>1. Partner — Code: <code>Partner</code></span>
+            <span class="badge-pill">Account Type: Staff | Scopes: FIRM_WIDE, CLIENT, ENGAGEMENT, GROUP</span>
+          </summary>
+          <div class="role-card-body">
+            <p><strong>One-line summary &amp; typical job titles:</strong> Engagement leader and signing authority who owns Key 2 risk clearance, engagement activation, high-risk audit clearance, opinion signing, and final financial package release. <em>Typical titles: Engagement Partner, Audit Partner, Managing Partner, EQR Partner.</em></p>
+            <div class="role-meta-grid">
+              <div class="role-field"><strong>Daily responsibilities</strong>Evaluates client acceptance &amp; independence risk, activates engagements after commercial/advance gates clear, locks materiality/SRM, clears high-risk procedures, concurs as independent EQR Partner, approves financial packages, verifies signed LORs, and signs the audit opinion/report.</div>
+              <div class="role-field"><strong>What they can do</strong>Record Key 2 Partner risk clearance; activate engagements; approve planning, SRM &amp; high-risk (<code>HIGH</code>) procedures; perform independent EQR concurrence; verify signed LORs; sign opinions &amp; reports; approve/release financial packages; configure EOS provision policy, pricing rules, workflow templates &amp; technical library.</div>
+              <div class="role-field"><strong>What they cannot do / need someone else for</strong>Cannot record Key 1 client commercial acceptance; cannot activate an engagement before the 50% advance milestone is marked <code>PAID</code> by Finance; cannot review work they prepared themselves; cannot serve as EQR Partner on their own engagement; cannot manage <code>Users &amp; Access</code> without <code>Administrator</code>.</div>
+              <div class="role-field"><strong>Decisions they own</strong>Key 2 risk clearance, engagement activation, planning &amp; SRM lock, high-risk procedure clearance, EQR concurrence (when assigned), signed LOR verification, financial package Partner release, audit opinion, report signing &amp; archive freeze.</div>
+              <div class="role-field"><strong>Who they hand off to or are reviewed by</strong>Receives manager-reviewed audit files and accounting packages from <code>Manager</code> and <code>AccountingReviewer</code>; peer-reviewed by an independent <code>Partner</code> when EQR applies.</div>
+              <div class="role-field"><strong>Scope options</strong><code>FIRM_WIDE</code>, <code>CLIENT</code>, <code>ENGAGEMENT</code>, <code>GROUP</code> (Engagement sign-offs also require <code>ENGAGEMENT_PARTNER</code> staffing; <code>GROUP</code> grants cannot have an expiry date).</div>
+              <div class="role-field"><strong>Screens they will see</strong><code>Portfolio Overview</code>, <code>CRM &amp; Pipeline</code>, <code>Client Directory</code>, <code>Proposals &amp; Fees</code>, <code>Engagement Directory</code>, <code>Workflow &amp; Tasks</code>, <code>Resource Planning</code>, <code>Client Progress</code>, <code>Accounting &amp; R2R</code>, <code>Audit Fieldwork</code>, <code>My Time &amp; Leave</code>, <code>Practice Analytics</code>, <code>Consolidation Groups</code>, <code>Technical Library</code>.</div>
+              <div class="role-field"><strong>How access ends (expiry or revocation)</strong>Automatic revocation at <code>ExpiresAt</code> (<code>Source = "EXPIRY"</code>, <code>NewRole = "EXPIRED"</code>) or immediate revocation/disablement by an <code>Administrator</code> with <code>SessionEpoch</code> increment.</div>
+            </div>
+          </div>
+        </details>
+
+        <!-- 2. Manager -->
+        <details class="role-card">
+          <summary>
+            <span>2. Manager — Code: <code>Manager</code></span>
+            <span class="badge-pill">Account Type: Staff | Scopes: FIRM_WIDE, CLIENT, ENGAGEMENT, GROUP</span>
+          </summary>
+          <div class="role-card-body">
+            <p><strong>One-line summary &amp; typical job titles:</strong> Engagement and practice manager who plans resources, staffs engagements, reviews fieldwork and client accounting stages, and prepares files for Partner sign-off. <em>Typical titles: Audit Manager, Assurance Manager, Senior Audit Manager.</em></p>
+            <div class="role-meta-grid">
+              <div class="role-field"><strong>Daily responsibilities</strong>Creates draft engagements, manages staffing &amp; resource capacity, oversees workflow plans, proposes or decides conditional task exclusions, reviews Rank 3 fieldwork procedures and confirmations, approves staff time entries, and reviews client accounting mappings/packages.</div>
+              <div class="role-field"><strong>What they can do</strong>Create draft engagements; staff engagements up to Audit Manager rank; review procedures (Rank 3), review notes &amp; confirmations; propose or independently decide conditional task exclusions; approve time entries; prepare &amp; review client accounting mappings, adjustments, reconciliations, financial packages &amp; consolidation groups; curate <code>Technical Library</code>.</div>
+              <div class="role-field"><strong>What they cannot do / need someone else for</strong>Cannot record Key 2 risk clearance, activate engagements, clear Partner-only (Rank 4 / <code>HIGH</code>) procedures, sign opinions/reports, or release Partner packages. Cannot review their own prepared work or decide their own conditional task exclusion proposal. Cannot access Firm Finance or User Administration.</div>
+              <div class="role-field"><strong>Decisions they own</strong>Staffing &amp; resource plans, Rank 3 procedure/review-note clearance, conditional task exclusion decisions (when independent), time approval, and Manager-stage accounting review.</div>
+              <div class="role-field"><strong>Who they hand off to or are reviewed by</strong>Reviews work from <code>Staff</code>, <code>Senior</code>, and <code>AccountingPreparer</code>; hands off reviewed files and packages to <code>Partner</code>.</div>
+              <div class="role-field"><strong>Scope options</strong><code>FIRM_WIDE</code>, <code>CLIENT</code>, <code>ENGAGEMENT</code>, <code>GROUP</code> (<code>GROUP</code> grants do not support expiry).</div>
+              <div class="role-field"><strong>Screens they will see</strong><code>Portfolio Overview</code>, <code>CRM &amp; Pipeline</code>, <code>Client Directory</code>, <code>Proposals &amp; Fees</code>, <code>Engagement Directory</code>, <code>Workflow &amp; Tasks</code>, <code>Resource Planning</code>, <code>Client Progress</code>, <code>Accounting &amp; R2R</code>, <code>Audit Fieldwork</code>, <code>My Time &amp; Leave</code>, <code>Practice Analytics</code>, <code>Consolidation Groups</code>, <code>Technical Library</code>.</div>
+              <div class="role-field"><strong>How access ends (expiry or revocation)</strong>Automatic revocation at <code>ExpiresAt</code> or immediate manual revocation/disablement by an <code>Administrator</code> with <code>SessionEpoch</code> increment.</div>
+            </div>
+          </div>
+        </details>
+
+        <!-- 3. Senior -->
+        <details class="role-card">
+          <summary>
+            <span>3. Senior — Code: <code>Senior</code></span>
+            <span class="badge-pill">Account Type: Staff | Scopes: FIRM_WIDE, CLIENT, ENGAGEMENT (No GROUP)</span>
+          </summary>
+          <div class="role-card-body">
+            <p><strong>One-line summary &amp; typical job titles:</strong> Fieldwork coordinator who executes complex audit procedures, manages sampling and confirmations, handles PBC evidence intake, and performs first-level review of low/medium-risk work. <em>Typical titles: Senior Auditor, Audit Senior, In-Charge Accountant.</em></p>
+            <div class="role-meta-grid">
+              <div class="role-field"><strong>Daily responsibilities</strong>Coordinates fieldwork execution, imports trial balances, performs substantive procedures and sampling, manages PBC requests and client uploads, and reviews Rank 2 procedures prepared by Staff.</div>
+              <div class="role-field"><strong>What they can do</strong>Prepare working papers, procedures, confirmations, finding responses &amp; trial-balance intake; manage PBC requests; review procedures &amp; review notes where risk band permits Rank 2 (and Senior is not preparer); log time &amp; tasks; read <code>PARTNERS_AND_MANAGERS</code> technical library.</div>
+              <div class="role-field"><strong>What they cannot do / need someone else for</strong>Cannot hold <code>GROUP</code> scope; cannot review own work or clear Rank 3/4 procedures; cannot approve accounting mappings, adjustments, or financial packages; cannot manage staffing, approve time, or access CRM, Firm Finance, or Administration.</div>
+              <div class="role-field"><strong>Decisions they own</strong>Rank 2 procedure and review-note clearance (when independent of preparation) and PBC evidence intake verification.</div>
+              <div class="role-field"><strong>Who they hand off to or are reviewed by</strong>Reviews <code>Staff</code> work within Rank 2 limits; hands off fieldwork sections and findings to <code>Manager</code> and <code>Partner</code>.</div>
+              <div class="role-field"><strong>Scope options</strong><code>FIRM_WIDE</code>, <code>CLIENT</code>, <code>ENGAGEMENT</code> (<code>GROUP</code> is prohibited by server validation).</div>
+              <div class="role-field"><strong>Screens they will see</strong><code>Portfolio Overview</code>, <code>Engagement Directory</code>, <code>Workflow &amp; Tasks</code>, <code>Client Progress</code>, <code>Accounting &amp; R2R</code> (TB/GL intake &amp; read views), <code>Audit Fieldwork</code>, <code>My Time &amp; Leave</code>, <code>Technical Library</code>.</div>
+              <div class="role-field"><strong>How access ends (expiry or revocation)</strong>Automatic revocation at <code>ExpiresAt</code> or immediate manual revocation/disablement by an <code>Administrator</code> with <code>SessionEpoch</code> increment.</div>
+            </div>
+          </div>
+        </details>
+
+        <!-- 4. Staff -->
+        <details class="role-card">
+          <summary>
+            <span>4. Staff — Code: <code>Staff</code></span>
+            <span class="badge-pill">Account Type: Staff | Scopes: FIRM_WIDE, CLIENT, ENGAGEMENT, GROUP</span>
+          </summary>
+          <div class="role-card-body">
+            <p><strong>One-line summary &amp; typical job titles:</strong> Core engagement team member who prepares assigned working papers, imports source trial balances, drafts adjustment journals, manages PBC items, and logs time. <em>Typical titles: Audit Associate, Staff Auditor, Junior Accountant.</em></p>
+            <div class="role-meta-grid">
+              <div class="role-field"><strong>Daily responsibilities</strong>Executes assigned audit procedures, uploads working paper evidence, imports trial balance / GL files, drafts adjustment journals and statement layouts, responds to review notes, and logs daily time.</div>
+              <div class="role-field"><strong>What they can do</strong>Prepare assigned procedures, working papers &amp; tasks; import TB/GL datasets; draft adjustment journals, adjustment plans, statement layouts &amp; package seal preparation; manage PBC staff inbox; respond to review notes; log time; read <code>ALL_STAFF</code> technical library.</div>
+              <div class="role-field"><strong>What they cannot do / need someone else for</strong>Cannot review or approve any procedure, review note, mapping, journal, reconciliation, or package (Rank 1 has zero review authority); cannot prepare FSLI mapping drafts requiring <code>AccountingPreparer</code>; cannot access CRM, Firm Finance, or Administration.</div>
+              <div class="role-field"><strong>Decisions they own</strong>None — strictly a preparation role; all outputs require independent review.</div>
+              <div class="role-field"><strong>Who they hand off to or are reviewed by</strong>Hands off prepared working papers, procedures, and draft adjustments to <code>Senior</code>, <code>Manager</code>, or <code>AccountingReviewer</code>.</div>
+              <div class="role-field"><strong>Scope options</strong><code>FIRM_WIDE</code>, <code>CLIENT</code>, <code>ENGAGEMENT</code>, <code>GROUP</code> (<code>GROUP</code> grants do not support expiry).</div>
+              <div class="role-field"><strong>Screens they will see</strong><code>Portfolio Overview</code>, <code>Engagement Directory</code>, <code>Workflow &amp; Tasks</code>, <code>Client Progress</code>, <code>Accounting &amp; R2R</code> (preparation views), <code>Audit Fieldwork</code>, <code>My Time &amp; Leave</code>, <code>Technical Library</code>.</div>
+              <div class="role-field"><strong>How access ends (expiry or revocation)</strong>Automatic revocation at <code>ExpiresAt</code> or immediate manual revocation/disablement by an <code>Administrator</code> with <code>SessionEpoch</code> increment.</div>
+            </div>
+          </div>
+        </details>
+
+        <!-- 5. RelationshipManager -->
+        <details class="role-card">
+          <summary>
+            <span>5. Relationship Manager — Code: <code>RelationshipManager</code></span>
+            <span class="badge-pill">Account Type: Staff | Scopes: FIRM_WIDE, CLIENT, ENGAGEMENT (No GROUP)</span>
+          </summary>
+          <div class="role-card-body">
+            <p><strong>One-line summary &amp; typical job titles:</strong> Commercial and client-relationship lead who manages leads, client profiles, proposals, fee agreements, Key 1 acceptance evidence, and draft engagement setup. <em>Typical titles: Relationship Manager, Business Development Manager, Client Onboarding Lead.</em></p>
+            <div class="role-meta-grid">
+              <div class="role-field"><strong>Daily responsibilities</strong>Qualifies CRM leads, converts leads to clients, maintains client contacts, drafts proposals and quotations, generates fee agreements, records Key 1 client acceptance, and creates draft engagements.</div>
+              <div class="role-field"><strong>What they can do</strong>Manage CRM leads, opportunities, client profiles &amp; contacts; prepare proposals/quotations &amp; fee agreements; record Key 1 client commercial acceptance of the exact proposal revision; create draft engagements; view onboarding readiness.</div>
+              <div class="role-field"><strong>What they cannot do / need someone else for</strong>Cannot record Key 2 Partner risk clearance or activate engagements (Partner only); cannot configure commercial pricing rules (Partner/Admin only); cannot hold <code>GROUP</code> scope; cannot access audit fieldwork, client accounting, firm billing/ledger, or user administration.</div>
+              <div class="role-field"><strong>Decisions they own</strong>Lead qualification, proposal preparation, and recording Key 1 client commercial acceptance evidence.</div>
+              <div class="role-field"><strong>Who they hand off to or are reviewed by</strong>Hands off accepted proposals and draft engagements to <code>Partner</code> (for Key 2 risk clearance &amp; activation) and <code>FinanceManager</code> (for 50% advance billing).</div>
+              <div class="role-field"><strong>Scope options</strong><code>FIRM_WIDE</code>, <code>CLIENT</code>, <code>ENGAGEMENT</code> (No <code>GROUP</code> scope; CRM pipeline &amp; fee-agreement queries require <code>FIRM_WIDE</code>).</div>
+              <div class="role-field"><strong>Screens they will see</strong><code>Portfolio Overview</code>, <code>CRM &amp; Pipeline</code>, <code>Client Directory</code>, <code>Proposals &amp; Fees</code>, <code>Engagement Directory</code> (drafts &amp; onboarding), <code>My Time &amp; Leave</code>, <code>Technical Library</code>.</div>
+              <div class="role-field"><strong>How access ends (expiry or revocation)</strong>Automatic revocation at <code>ExpiresAt</code> or immediate manual revocation/disablement by an <code>Administrator</code> with <code>SessionEpoch</code> increment.</div>
+            </div>
+          </div>
+        </details>
+
+        <!-- 6. FinanceManager -->
+        <details class="role-card">
+          <summary>
+            <span>6. Finance Manager — Code: <code>FinanceManager</code></span>
+            <span class="badge-pill">Account Type: Staff | Scopes: FIRM_WIDE, CLIENT, ENGAGEMENT, GROUP</span>
+          </summary>
+          <div class="role-card-body">
+            <p><strong>One-line summary &amp; typical job titles:</strong> Firm finance preparer who manages client billing accounts, drafts invoices and credit notes, records receipts and advance milestone payments, and prepares firm general ledger journals. <em>Typical titles: Finance Manager, Practice Accountant, Billing Manager.</em></p>
+            <div class="role-meta-grid">
+              <div class="role-field"><strong>Daily responsibilities</strong>Sets up billing accounts, drafts milestone/advance invoices, issues credit notes, records and allocates client receipts (including the 50% advance gate), submits payment-terms or allocation-reversal requests, and prepares firm ledger journals.</div>
+              <div class="role-field"><strong>What they can do</strong>Create billing accounts, draft invoices &amp; credit notes, record/allocate receipts, request payment-terms changes or receipt allocation reversals, and prepare firm general ledger journals &amp; expenses (firm ledger requires <code>FIRM_WIDE</code>).</div>
+              <div class="role-field"><strong>What they cannot do / need someone else for</strong>Cannot approve invoices, firm ledger journals, payment-terms changes, or allocation reversals (requires an independent <code>FinanceReviewer</code>); cannot touch client accounting books (R2R) or audit working papers.</div>
+              <div class="role-field"><strong>Decisions they own</strong>Preparation of firm billing records, receipt recording/allocation, and submission of firm ledger journals and billing change requests.</div>
+              <div class="role-field"><strong>Who they hand off to or are reviewed by</strong>Submits invoices, journals, payment-terms requests, and allocation reversals to an independent <code>FinanceReviewer</code>.</div>
+              <div class="role-field"><strong>Scope options</strong><code>FIRM_WIDE</code>, <code>CLIENT</code>, <code>ENGAGEMENT</code>, <code>GROUP</code> (Firm books &amp; ledger require <code>FIRM_WIDE</code>; billing accepts <code>CLIENT</code> or <code>FIRM_WIDE</code>).</div>
+              <div class="role-field"><strong>Screens they will see</strong><code>Portfolio Overview</code>, <code>Firm Billing</code>, <code>Firm Books</code>, <code>Practice Analytics</code> (finance views), <code>My Time &amp; Leave</code>, <code>Technical Library</code>.</div>
+              <div class="role-field"><strong>How access ends (expiry or revocation)</strong>Automatic revocation at <code>ExpiresAt</code> or immediate manual revocation/disablement by an <code>Administrator</code> with <code>SessionEpoch</code> increment.</div>
+            </div>
+          </div>
+        </details>
+
+        <!-- 7. FinanceReviewer -->
+        <details class="role-card">
+          <summary>
+            <span>7. Finance Reviewer — Code: <code>FinanceReviewer</code></span>
+            <span class="badge-pill">Account Type: Staff | Scopes: FIRM_WIDE, CLIENT, ENGAGEMENT, GROUP</span>
+          </summary>
+          <div class="role-card-body">
+            <p><strong>One-line summary &amp; typical job titles:</strong> Independent firm finance checker who reviews and approves firm invoices, general ledger journals, payment-terms changes, receipt allocation reversals, and period controls. <em>Typical titles: Financial Controller, Finance Reviewer, Head of Finance.</em></p>
+            <div class="role-meta-grid">
+              <div class="role-field"><strong>Daily responsibilities</strong>Independently reviews and approves/rejects draft client invoices, firm general ledger journals, payment-terms requests, receipt allocation reversals, firm expenses, and accounting period locks.</div>
+              <div class="role-field"><strong>What they can do</strong>Approve/reject firm invoices, ledger journals, payment-terms changes, allocation reversals &amp; expenses; manage firm ledger period controls (<code>FIRM_WIDE</code>); also permitted to create invoices and record/allocate receipts in <code>BillingService</code>.</div>
+              <div class="role-field"><strong>What they cannot do / need someone else for</strong><strong>Strict Maker-Checker:</strong> Cannot approve any invoice, journal, payment-terms request, or reversal that they created/requested themselves—even if granted both finance roles. Cannot prepare firm ledger journals without <code>FinanceManager</code>. No client-accounting or audit access.</div>
+              <div class="role-field"><strong>Decisions they own</strong>Independent maker-checker approval of firm invoices, firm ledger postings, payment-terms changes, allocation reversals, and period locks.</div>
+              <div class="role-field"><strong>Who they hand off to or are reviewed by</strong>Reviews submissions from <code>FinanceManager</code>; paid advance milestones unlock <code>Partner</code> engagement activation.</div>
+              <div class="role-field"><strong>Scope options</strong><code>FIRM_WIDE</code>, <code>CLIENT</code>, <code>ENGAGEMENT</code>, <code>GROUP</code> (<code>FIRM_WIDE</code> required for firm ledger approvals &amp; period controls).</div>
+              <div class="role-field"><strong>Screens they will see</strong><code>Portfolio Overview</code>, <code>Firm Billing</code>, <code>Firm Books</code>, <code>Practice Analytics</code> (finance views), <code>My Time &amp; Leave</code>, <code>Technical Library</code>.</div>
+              <div class="role-field"><strong>How access ends (expiry or revocation)</strong>Automatic revocation at <code>ExpiresAt</code> or immediate manual revocation/disablement by an <code>Administrator</code> with <code>SessionEpoch</code> increment.</div>
+            </div>
+          </div>
+        </details>
+
+        <!-- 8. AccountingPreparer -->
+        <details class="role-card">
+          <summary>
+            <span>8. Accounting Preparer — Code: <code>AccountingPreparer</code></span>
+            <span class="badge-pill">Account Type: Staff | Scopes: FIRM_WIDE, CLIENT, ENGAGEMENT, GROUP</span>
+          </summary>
+          <div class="role-card-body">
+            <p><strong>One-line summary &amp; typical job titles:</strong> Client accounting and Record-to-Report (R2R) specialist who prepares trial balance mappings, adjustments, reconciliations, specialist schedules, financial statements, and group consolidations. <em>Typical titles: Client Accountant, R2R Specialist, Consolidation Accountant.</em></p>
+            <div class="role-meta-grid">
+              <div class="role-field"><strong>Daily responsibilities</strong>Imports client trial balances/GLs, maintains charts of accounts, drafts FSLI mappings, prepares client adjustment journals, reconciliations, and valuation schedules, builds financial statements, and prepares group consolidation runs.</div>
+              <div class="role-field"><strong>What they can do</strong>Prepare client accounting datasets, COA, FSLI mapping drafts, adjustment journals/plans, reconciliations, specialist schedules, financial statement sets/packages, and group consolidation eliminations/translations.</div>
+              <div class="role-field"><strong>What they cannot do / need someone else for</strong>Cannot review or approve accounting sources, mappings, adjustments, reconciliations, financial packages, or consolidation runs (requires <code>AccountingReviewer</code>, <code>Manager</code>, or <code>Partner</code>); cannot access Firm Finance or audit procedure sign-offs.</div>
+              <div class="role-field"><strong>Decisions they own</strong>Preparation and submission of client accounting schedules, FSLI mappings, financial statements, and consolidation runs.</div>
+              <div class="role-field"><strong>Who they hand off to or are reviewed by</strong>Hands off prepared mappings, adjustments, reconciliations, packages, and consolidations to an independent <code>AccountingReviewer</code> or <code>Manager</code>.</div>
+              <div class="role-field"><strong>Scope options</strong><code>FIRM_WIDE</code>, <code>CLIENT</code>, <code>ENGAGEMENT</code>, <code>GROUP</code> (<code>GROUP</code> creates a <code>GroupAccessGrant</code> with no expiry date).</div>
+              <div class="role-field"><strong>Screens they will see</strong><code>Portfolio Overview</code>, <code>Engagement Directory</code>, <code>Accounting &amp; R2R</code> (all 5 sub-workspaces), <code>Consolidation Groups</code>, <code>My Time &amp; Leave</code>, <code>Technical Library</code>.</div>
+              <div class="role-field"><strong>How access ends (expiry or revocation)</strong>Automatic revocation at <code>ExpiresAt</code> (except <code>GROUP</code>) or immediate manual revocation/disablement by an <code>Administrator</code> with <code>SessionEpoch</code> increment.</div>
+            </div>
+          </div>
+        </details>
+
+        <!-- 9. AccountingReviewer -->
+        <details class="role-card">
+          <summary>
+            <span>9. Accounting Reviewer — Code: <code>AccountingReviewer</code></span>
+            <span class="badge-pill">Account Type: Staff | Scopes: FIRM_WIDE, CLIENT, ENGAGEMENT, GROUP</span>
+          </summary>
+          <div class="role-card-body">
+            <p><strong>One-line summary &amp; typical job titles:</strong> Independent client accounting and consolidation reviewer who approves trial balance mappings, adjustments, reconciliations, financial package accounting stages, and group consolidations. <em>Typical titles: Accounting Review Manager, Technical Accounting Reviewer, R2R Manager.</em></p>
+            <div class="role-meta-grid">
+              <div class="role-field"><strong>Daily responsibilities</strong>Verifies client trial balance sources, approves FSLI mappings, reviews and posts client adjustment journals, signs off reconciliations and specialist schedules, completes the accounting review stage on financial packages, and reviews group consolidations.</div>
+              <div class="role-field"><strong>What they can do</strong>Independently review and approve client accounting sources, FSLI mappings, adjustment journals, reconciliations, financial package accounting stage, and group consolidations; also accepted in preparation guards where not self-reviewing.</div>
+              <div class="role-field"><strong>What they cannot do / need someone else for</strong><strong>Strict Self-Review Prohibition:</strong> Cannot approve any mapping, adjustment, reconciliation, package, or consolidation they prepared themselves. Cannot perform final Partner package release, Partner risk clearance, audit opinion sign-off, or Firm Finance approvals.</div>
+              <div class="role-field"><strong>Decisions they own</strong>Independent accounting review approval for client TB sources, mappings, adjustments, reconciliations, financial package accounting review, and group consolidation review.</div>
+              <div class="role-field"><strong>Who they hand off to or are reviewed by</strong>Reviews work from <code>AccountingPreparer</code> and <code>Staff</code>; hands off reviewed financial packages to <code>Partner</code> for final Partner approval and release.</div>
+              <div class="role-field"><strong>Scope options</strong><code>FIRM_WIDE</code>, <code>CLIENT</code>, <code>ENGAGEMENT</code>, <code>GROUP</code> (<code>GROUP</code> grants do not support expiry).</div>
+              <div class="role-field"><strong>Screens they will see</strong><code>Portfolio Overview</code>, <code>Engagement Directory</code>, <code>Accounting &amp; R2R</code> (all 5 sub-workspaces), <code>Consolidation Groups</code>, <code>My Time &amp; Leave</code>, <code>Technical Library</code>.</div>
+              <div class="role-field"><strong>How access ends (expiry or revocation)</strong>Automatic revocation at <code>ExpiresAt</code> (except <code>GROUP</code>) or immediate manual revocation/disablement by an <code>Administrator</code> with <code>SessionEpoch</code> increment.</div>
+            </div>
+          </div>
+        </details>
+
+        <!-- 10. Administrator -->
+        <details class="role-card">
+          <summary>
+            <span>10. Administrator — Code: <code>Administrator</code></span>
+            <span class="badge-pill">Account Type: Staff | Scopes: FIRM_WIDE, CLIENT, ENGAGEMENT, GROUP</span>
+          </summary>
+          <div class="role-card-body">
+            <p><strong>One-line summary &amp; typical job titles:</strong> Platform and access administrator who binds user identities, assigns and revokes role grants, maintains firm configuration, and holds audited read-only oversight on 13 registered finance and consolidation views without holding Partner or Finance authority. <em>Typical titles: IT &amp; Access Administrator, Practice Operations Administrator.</em></p>
+            <div class="role-meta-grid">
+              <div class="role-field"><strong>Daily responsibilities</strong>Binds staff and client emails to roster identities, assigns/revokes role grants, copies invitation links, configures firm settings and workflow templates, manages optional Microsoft 365 capabilities, and monitors immutable audit logs.</div>
+              <div class="role-field"><strong>What they can do</strong>Manage <code>Users &amp; Access</code> (search, bind roster identity, assign/revoke roles, disable/enable users, copy invitation links at <code>FIRM_WIDE</code>); configure firm settings, pricing rules, workflow templates &amp; technical library; propose/decide conditional task exclusions; view 13 registered read-only oversight queries in Firm Finance &amp; Group Consolidation (logging an immutable <code>AdministratorOversightAccessEvent</code>).</div>
+              <div class="role-field"><strong>What they cannot do / need someone else for</strong><strong>"Administrator access does not confer Partner, FinanceManager, or FinanceReviewer authority":</strong> Cannot clear Partner risk gates, activate engagements, sign audit opinions/reports, approve financial packages, or create/approve firm invoices or journals. Oversight is strictly read-only.</div>
+              <div class="role-field"><strong>Decisions they own</strong>Identity roster binding, role/scope grant assignment and revocation, account enablement/disablement, firm configuration, and conditional task exclusion decisions (when not proposer).</div>
+              <div class="role-field"><strong>Who they hand off to or are reviewed by</strong>Executes access requests approved by Partners, Managers, or client leads; all actions are logged in append-only <code>RoleGrantAuditEvents</code> and <code>AdministratorOversightAccessEvents</code>.</div>
+              <div class="role-field"><strong>Scope options</strong><code>FIRM_WIDE</code>, <code>CLIENT</code>, <code>ENGAGEMENT</code>, <code>GROUP</code> (<code>FIRM_WIDE</code> required for <code>Users &amp; Access</code>, <code>Firm Settings</code>, <code>Microsoft 365</code>, and read-only oversight).</div>
+              <div class="role-field"><strong>Screens they will see</strong><code>Users &amp; Access</code>, <code>Firm Settings</code>, <code>Microsoft 365</code>, <code>Oversight History</code>, <code>Workflow &amp; Tasks</code>, <code>Technical Library</code>, plus <code>Firm Billing</code>, <code>Firm Books</code> &amp; <code>Consolidation Groups</code> in <code>Read-only — Administrator oversight</code> mode.</div>
+              <div class="role-field"><strong>How access ends (expiry or revocation)</strong>Automatic revocation at <code>ExpiresAt</code> or immediate revocation/disablement by another <code>Administrator</code> with <code>SessionEpoch</code> increment.</div>
+            </div>
+          </div>
+        </details>
+
+        <!-- 11. ClientUser -->
+        <details class="role-card">
+          <summary>
+            <span>11. Client User — Code: <code>ClientUser</code></span>
+            <span class="badge-pill">Account Type: Client | Scopes: CLIENT, ENGAGEMENT Only</span>
+          </summary>
+          <div class="role-card-body">
+            <p><strong>One-line summary &amp; typical job titles:</strong> External client representative who uses the isolated Client Portal (<code>/portal</code>) to upload requested PBC audit documents, reply to queries, respond to management journals/packages, and delegate PBC items. <em>Typical titles: Client Finance Director, Chief Accountant, Financial Controller.</em></p>
+            <div class="role-meta-grid">
+              <div class="role-field"><strong>Daily responsibilities</strong>Reviews open PBC document requests, uploads supporting evidence files, answers audit team messages, reviews and responds to shared management adjustment journals and financial packages, and delegates PBC items to client colleagues.</div>
+              <div class="role-field"><strong>What they can do</strong>Accept first-sign-in security terms (<code>PORTAL-SECURITY-2026-1</code>); view assigned PBC requests, upload evidence &amp; post replies; record management responses on shared journals &amp; financial packages; delegate a PBC request to another active <code>ClientUser</code> of the same client (when primary contact &amp; request owner).</div>
+              <div class="role-field"><strong>What they cannot do / need someone else for</strong>Never allowed <code>FIRM_WIDE</code> or <code>GROUP</code> scope; blocked from <code>/portal</code> until all 4 onboarding gates clear (Key 1 acceptance + Key 2 Partner risk clearance + 50% advance <code>PAID</code> + Partner activation); denied all internal <code>/app</code> screens and working papers.</div>
+              <div class="role-field"><strong>Decisions they own</strong>First-sign-in security acknowledgment, PBC evidence uploads, PBC request delegation (when primary contact/owner), and management responses on shared journals/packages.</div>
+              <div class="role-field"><strong>Who they hand off to or are reviewed by</strong>Uploads PBC evidence and management responses for verification by <code>Staff</code>, <code>Senior</code>, <code>Manager</code>, <code>AccountingReviewer</code>, and <code>Partner</code>.</div>
+              <div class="role-field"><strong>Scope options</strong><code>CLIENT</code>, <code>ENGAGEMENT</code> only (<strong>never</strong> <code>FIRM_WIDE</code> or <code>GROUP</code>).</div>
+              <div class="role-field"><strong>Screens they will see</strong><code>Client Portal Home</code> (<code>/portal</code>), <code>Information Request (PBC) Detail</code> (<code>/portal/requests/:id</code>), <code>Management Package Review</code> (<code>/portal/accounting/packages/:id</code>), <code>Management Journal Review</code> (<code>/portal/accounting/journals/:id</code>).</div>
+              <div class="role-field"><strong>How access ends (expiry or revocation)</strong>Automatic revocation at <code>ExpiresAt</code> or immediate revocation/disablement by an <code>Administrator</code> with <code>SessionEpoch</code> increment.</div>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <!-- SECTION 5 -->
+      <section class="card-section" id="sec-5">
+        <h2>5. Who does what across the engagement lifecycle</h2>
+        <div class="warn-box">
+          <strong>Crucial Rule — Lifecycle State Is Derived from Evidence, Not Set by Tasks:</strong> Nobody can manually advance an engagement phase by checking off a to-do task. AuditSphere derives the 7 display phases automatically from verified domain evidence (accepted proposal revision, unconditional Partner risk clearance, paid 50% advance milestone, approved planning &amp; SRM lock, signed-off procedures, verified LOR, signed opinion, and sealed archive manifest).
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Display Phase</th>
+                <th><code>RelationshipManager</code></th>
+                <th><code>FinanceManager</code> &amp; <code>FinanceReviewer</code></th>
+                <th><code>Partner</code></th>
+                <th><code>Manager</code></th>
+                <th><code>Senior</code> &amp; <code>Staff</code></th>
+                <th><code>AccountingPreparer</code> &amp; <code>AccountingReviewer</code></th>
+                <th><code>ClientUser</code></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>1 Onboarding</strong></td>
+                <td>Prepares proposal; records Key 1 acceptance; creates draft engagement</td>
+                <td>Issues 50% advance invoice, approves (<code>FinanceReviewer</code>) &amp; allocates receipt (<code>PAID</code>)</td>
+                <td>Records Key 2 unconditional risk clearance; activates engagement</td>
+                <td>Sets up initial staffing plan</td>
+                <td>Waits for activation &amp; staffing</td>
+                <td>Waits for activation</td>
+                <td>Accepts security terms (<code>PORTAL-SECURITY-2026-1</code>) once activated</td>
+              </tr>
+              <tr>
+                <td><strong>2 Planning</strong></td>
+                <td>Views onboarding status</td>
+                <td>Monitors milestone billing</td>
+                <td>Locks materiality/SRM &amp; approves planning completion</td>
+                <td>Builds workflow plan, resource allocations &amp; risk owners</td>
+                <td>Prepares preliminary analytics &amp; PBC request lists</td>
+                <td>Imports opening TB/GL &amp; sets up Chart of Accounts</td>
+                <td>Receives initial PBC requests in <code>/portal</code></td>
+              </tr>
+              <tr>
+                <td><strong>3 Fieldwork</strong></td>
+                <td>—</td>
+                <td>Issues progress billing (Maker-Checker)</td>
+                <td>Oversees significant risks</td>
+                <td>Manages conditional task exclusions &amp; progress</td>
+                <td>Executes 20-section/165-procedure programme; <code>Senior</code> reviews Rank 2</td>
+                <td><code>AccountingPreparer</code> drafts mappings, adjustments, reconciliations &amp; statements</td>
+                <td>Uploads PBC evidence, replies &amp; delegates PBC items</td>
+              </tr>
+              <tr>
+                <td><strong>4 Manager review</strong></td>
+                <td>—</td>
+                <td>—</td>
+                <td>Reviews escalated high-risk findings</td>
+                <td>Reviews Rank 3 procedures, review notes &amp; confirmations</td>
+                <td>Responds to and clears review notes</td>
+                <td><code>AccountingReviewer</code> approves mappings, adjustments, reconciliations &amp; package stage</td>
+                <td>Responds to proposed management adjustment journals</td>
+              </tr>
+              <tr>
+                <td><strong>5 Partner sign-off</strong></td>
+                <td>—</td>
+                <td>—</td>
+                <td>Clears High-Risk procedures, verifies signed LOR, approves package &amp; opinion (+ independent EQR)</td>
+                <td>Hands off reviewed completion file to Partner</td>
+                <td>Ensures all procedure evidence snapshots are sealed</td>
+                <td>Resolves final Partner accounting queries</td>
+                <td>Uploads signed LOR &amp; acknowledges management package</td>
+              </tr>
+              <tr>
+                <td><strong>6 Report and delivery</strong></td>
+                <td>—</td>
+                <td>Issues final invoice &amp; allocates receipt</td>
+                <td>Signs final audit report (X.509 PDF) &amp; authorizes package release</td>
+                <td>Coordinates report assembly &amp; delivery</td>
+                <td>—</td>
+                <td>Generates final sealed financial statement package</td>
+                <td>Receives released deliverables</td>
+              </tr>
+              <tr>
+                <td><strong>7 Archive and close</strong></td>
+                <td>—</td>
+                <td>Closes billing milestones</td>
+                <td>Authorizes archive freeze (append-only SHA-256 manifest)</td>
+                <td>Verifies retention completeness</td>
+                <td>Read-only on frozen file</td>
+                <td>Read-only on sealed datasets</td>
+                <td>Portal requests closed</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <figure class="diagram-figure">
+          <svg viewBox="0 0 760 560" role="img" aria-labelledby="diag-c-title diag-c-desc">
+            <title id="diag-c-title">Diagram C: Evidence-Driven Engagement Lifecycle Across the 7 Display Phases</title>
+            <desc id="diag-c-desc">Vertical chain of 7 phases from 1 Onboarding through 7 Archive and close, showing the exact domain evidence milestone and owning roles required to transition between phases.</desc>
+            <defs>
+              <marker id="arrow-c" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155" />
+              </marker>
+            </defs>
+            <rect x="110" y="15" width="540" height="54" rx="6" fill="#E69F00" stroke="#7A5200" stroke-width="2"/>
+            <text x="380" y="38" text-anchor="middle" font-size="12.5" font-weight="700" fill="#000000">[Phase 1: Onboarding] RelationshipManager (Key 1) + Finance (50% Advance PAID)</text>
+            <text x="380" y="56" text-anchor="middle" font-size="11.5" fill="#000000">+ Staffed Engagement Partner (Key 2 Risk Clearance &amp; Activation)</text>
+
+            <rect x="110" y="93" width="540" height="54" rx="6" fill="#56B4E9" stroke="#004C70" stroke-width="2"/>
+            <text x="380" y="116" text-anchor="middle" font-size="12.5" font-weight="700" fill="#000000">[Phase 2: Planning] Manager prepares Staffing, Risk &amp; Workflow Plan</text>
+            <text x="380" y="134" text-anchor="middle" font-size="11.5" fill="#000000">Evidence Gate: Partner locks Materiality/SRM &amp; approves Planning</text>
+
+            <rect x="110" y="171" width="540" height="54" rx="6" fill="#009E73" stroke="#004D38" stroke-width="2"/>
+            <text x="380" y="194" text-anchor="middle" font-size="12.5" font-weight="700" fill="#FFFFFF">[Phase 3: Fieldwork] Staff/Senior execute Procedures; Senior reviews Rank 2</text>
+            <text x="380" y="212" text-anchor="middle" font-size="11.5" fill="#FFFFFF">AccountingPreparer drafts TB/GL, Mappings &amp; Adjustments; ClientUser uploads PBC</text>
+
+            <rect x="110" y="249" width="540" height="54" rx="6" fill="#0072B2" stroke="#003654" stroke-width="2"/>
+            <text x="380" y="272" text-anchor="middle" font-size="12.5" font-weight="700" fill="#FFFFFF">[Phase 4: Manager review] Manager clears Rank 3 Procedures &amp; Confirmations</text>
+            <text x="380" y="290" text-anchor="middle" font-size="11.5" fill="#FFFFFF">Evidence Gate: AccountingReviewer approves Mappings, Adjustments &amp; Package stage</text>
+
+            <rect x="110" y="327" width="540" height="54" rx="6" fill="#CC79A7" stroke="#5E2B47" stroke-width="2"/>
+            <text x="380" y="350" text-anchor="middle" font-size="12.5" font-weight="700" fill="#FFFFFF">[Phase 5: Partner sign-off] Partner clears High-Risk Procedures &amp; verifies signed LOR</text>
+            <text x="380" y="368" text-anchor="middle" font-size="11.5" fill="#FFFFFF">Evidence Gate: Partner approves Package &amp; Opinion (+ independent EQR Partner if required)</text>
+
+            <rect x="110" y="405" width="540" height="54" rx="6" fill="#F0E442" stroke="#6B6200" stroke-width="2"/>
+            <text x="380" y="428" text-anchor="middle" font-size="12.5" font-weight="700" fill="#000000">[Phase 6: Report and delivery] Partner signs Final Audit Report (X.509 PDF)</text>
+            <text x="380" y="446" text-anchor="middle" font-size="11.5" fill="#000000">Evidence Gate: Partner authorizes Financial Package Release</text>
+
+            <rect x="110" y="483" width="540" height="54" rx="24" fill="#332288" stroke="#1A1144" stroke-width="2"/>
+            <text x="380" y="506" text-anchor="middle" font-size="12.5" font-weight="700" fill="#FFFFFF">[Phase 7: Archive and close] Partner authorizes Archive Freeze</text>
+            <text x="380" y="524" text-anchor="middle" font-size="11.5" fill="#FFFFFF">Terminal Evidence: Append-only release bytes &amp; SHA-256 manifest sealed</text>
+
+            <line x1="380" y1="69" x2="380" y2="89" stroke="#334155" stroke-width="2" marker-end="url(#arrow-c)"/>
+            <line x1="380" y1="147" x2="380" y2="167" stroke="#334155" stroke-width="2" marker-end="url(#arrow-c)"/>
+            <line x1="380" y1="225" x2="380" y2="245" stroke="#334155" stroke-width="2" marker-end="url(#arrow-c)"/>
+            <line x1="380" y1="303" x2="380" y2="323" stroke="#334155" stroke-width="2" marker-end="url(#arrow-c)"/>
+            <line x1="380" y1="381" x2="380" y2="401" stroke="#334155" stroke-width="2" marker-end="url(#arrow-c)"/>
+            <line x1="380" y1="459" x2="380" y2="479" stroke="#334155" stroke-width="2" marker-end="url(#arrow-c)"/>
+          </svg>
+          <figcaption class="diagram-caption">Diagram C: Each of the 7 lifecycle phases advances only when the server verifies the underlying domain evidence—never simply because a task checkbox was ticked.</figcaption>
+        </figure>
+      </section>
+
+      <!-- SECTION 6 -->
+      <section class="card-section" id="sec-6">
+        <h2>6. Approvals and separation of duties</h2>
+        <ul>
+          <li><strong>Dual-Key Acceptance + Paid 50% Advance (<code>ADR-0003</code> &amp; <code>ADR-0012</code>):</strong> Engagement activation and Client Portal access require (1) <strong>Key 1</strong> client commercial acceptance of the exact proposal revision, (2) <strong>Key 2</strong> unconditional risk clearance by the staffed <code>ENGAGEMENT_PARTNER</code>, and (3) the 50% <code>ADVANCE</code> billing milestone marked <code>PAID</code>.</li>
+          <li><strong>Preparer Is Never Reviewer (Maker-Checker):</strong> Across audit procedures, conditional task exclusions, client accounting mappings/adjustments/reconciliations/packages/consolidations, and firm invoices/ledger journals, the server checks <code>PreparedByUserId != ReviewerUserId</code>. Assigning two roles to one user never bypasses the two-person rule.</li>
+          <li><strong>Partner-Only Authority &amp; Independent EQR:</strong> Only a <code>Partner</code> can clear Key 2 risk, activate engagements, approve high-risk procedures, verify signed LORs, sign opinions/reports, or release financial packages. When EQR applies, the EQR Partner must be a different <code>Partner</code> from the Engagement Partner.</li>
+          <li><strong>Administrator Is Not Partner:</strong> <code>Administrator</code> access provides user management and 13 audited read-only oversight views, but <strong>never</strong> confers <code>Partner</code>, <code>FinanceManager</code>, or <code>FinanceReviewer</code> authority.</li>
+        </ul>
+
+        <figure class="diagram-figure">
+          <svg viewBox="0 0 760 470" role="img" aria-labelledby="diag-d-title diag-d-desc">
+            <title id="diag-d-title">Diagram D: Dual-Key Onboarding Gate and Maker-Checker Separation of Duties</title>
+            <desc id="diag-d-desc">Vertical diagram showing Key 1 (Commercial Acceptance), Key 2 (Partner Risk Clearance), and 50% Paid Advance converging at the Partner Activation Gate, followed by Person A (Preparer), the Server User A != User B barrier, Person B (Independent Reviewer), and Person C (Partner Final Sign-Off).</desc>
+            <defs>
+              <marker id="arrow-d" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155" />
+              </marker>
+            </defs>
+            <!-- Top 3 prerequisites -->
+            <rect x="20" y="20" width="220" height="68" rx="6" fill="#56B4E9" stroke="#004C70" stroke-width="2"/>
+            <text x="130" y="45" text-anchor="middle" font-size="12" font-weight="700" fill="#000000">[Key 1: Commercial Acceptance]</text>
+            <text x="130" y="63" text-anchor="middle" font-size="11" fill="#000000">Exact Proposal Revision Accepted</text>
+            <text x="130" y="78" text-anchor="middle" font-size="11" fill="#000000">(RelationshipManager)</text>
+
+            <rect x="270" y="20" width="220" height="68" rx="6" fill="#CC79A7" stroke="#5E2B47" stroke-width="2"/>
+            <text x="380" y="45" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">[Key 2: Partner Risk Clearance]</text>
+            <text x="380" y="63" text-anchor="middle" font-size="11" fill="#FFFFFF">Unconditional Clearance + Letter</text>
+            <text x="380" y="78" text-anchor="middle" font-size="11" fill="#FFFFFF">(Staffed Engagement Partner)</text>
+
+            <rect x="520" y="20" width="220" height="68" rx="6" fill="#E69F00" stroke="#7A5200" stroke-width="2"/>
+            <text x="630" y="45" text-anchor="middle" font-size="12" font-weight="700" fill="#000000">[Finance Gate: 50% Advance PAID]</text>
+            <text x="630" y="63" text-anchor="middle" font-size="11" fill="#000000">Invoice Approved + Receipt Allocated</text>
+            <text x="630" y="78" text-anchor="middle" font-size="11" fill="#000000">(FinanceManager + FinanceReviewer)</text>
+
+            <!-- Activation Gate -->
+            <rect x="140" y="125" width="480" height="52" rx="8" fill="#F0E442" stroke="#6B6200" stroke-width="2"/>
+            <text x="380" y="148" text-anchor="middle" font-size="12.5" font-weight="700" fill="#000000">[Partner Activation Gate] Requires Key 1 + Key 2 + Advance PAID</text>
+            <text x="380" y="166" text-anchor="middle" font-size="11.5" fill="#000000">Unlocks Engagement Fieldwork &amp; Client Portal (/portal)</text>
+
+            <!-- Person A -->
+            <rect x="140" y="205" width="480" height="52" rx="6" fill="#0072B2" stroke="#003654" stroke-width="2"/>
+            <text x="380" y="228" text-anchor="middle" font-size="12.5" font-weight="700" fill="#FFFFFF">[Person A: Preparer / Maker] Staff, Senior, AccountingPreparer, FinanceManager</text>
+            <text x="380" y="246" text-anchor="middle" font-size="11.5" fill="#FFFFFF">Prepares procedure, mapping, journal, package, or firm invoice</text>
+
+            <!-- SoD Barrier -->
+            <rect x="140" y="285" width="480" height="52" rx="6" fill="#D55E00" stroke="#6E3000" stroke-width="2"/>
+            <text x="380" y="308" text-anchor="middle" font-size="12.5" font-weight="700" fill="#FFFFFF">[Server Rule: User A != User B] Self-Review Strictly Blocked</text>
+            <text x="380" y="326" text-anchor="middle" font-size="11.5" fill="#FFFFFF">Holding 2 roles never supplies a 2nd person; Admin holds Read-Only Oversight only</text>
+
+            <!-- Person B -->
+            <rect x="140" y="365" width="480" height="44" rx="6" fill="#009E73" stroke="#004D38" stroke-width="2"/>
+            <text x="380" y="392" text-anchor="middle" font-size="12.5" font-weight="700" fill="#FFFFFF">[Person B: Independent Reviewer] Senior (Rank 2), Manager, Accounting/FinanceReviewer</text>
+
+            <!-- Person C -->
+            <rect x="140" y="425" width="480" height="36" rx="18" fill="#CC79A7" stroke="#5E2B47" stroke-width="2"/>
+            <text x="380" y="448" text-anchor="middle" font-size="12.5" font-weight="700" fill="#FFFFFF">[Person C: Partner Final Sign-Off] Staffed Partner (+ Independent EQR Partner)</text>
+
+            <line x1="130" y1="88" x2="260" y2="125" stroke="#334155" stroke-width="2" marker-end="url(#arrow-d)"/>
+            <line x1="380" y1="88" x2="380" y2="121" stroke="#334155" stroke-width="2" marker-end="url(#arrow-d)"/>
+            <line x1="630" y1="88" x2="500" y2="125" stroke="#334155" stroke-width="2" marker-end="url(#arrow-d)"/>
+            <line x1="380" y1="177" x2="380" y2="201" stroke="#334155" stroke-width="2" marker-end="url(#arrow-d)"/>
+            <line x1="380" y1="257" x2="380" y2="281" stroke="#334155" stroke-width="2" marker-end="url(#arrow-d)"/>
+            <line x1="380" y1="337" x2="380" y2="361" stroke="#334155" stroke-width="2" marker-end="url(#arrow-d)"/>
+            <line x1="380" y1="409" x2="380" y2="421" stroke="#334155" stroke-width="2" marker-end="url(#arrow-d)"/>
+          </svg>
+          <figcaption class="diagram-caption">Diagram D: Activation requires Key 1, Key 2, and a paid 50% advance; every subsequent workflow enforces strict two-person maker-checker independence (User A != User B).</figcaption>
+        </figure>
+      </section>
+
+      <!-- SECTION 7 -->
+      <section class="card-section" id="sec-7">
+        <h2>7. Role vs capability matrix</h2>
+        <p>Server-enforced capabilities across all <strong>10 AuditSphere modules</strong> and <strong>11 assignable roles</strong>. Legend: <span class="cell-badge cell-full">Full</span> <span class="cell-badge cell-approval">Requires another person's approval</span> <span class="cell-badge cell-view">View-only</span> <span class="cell-badge cell-none">None</span></p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Module Name</th>
+                <th><code>Partner</code></th>
+                <th><code>Manager</code></th>
+                <th><code>Senior</code></th>
+                <th><code>Staff</code></th>
+                <th><code>RelationshipManager</code></th>
+                <th><code>FinanceManager</code></th>
+                <th><code>FinanceReviewer</code></th>
+                <th><code>AccountingPreparer</code></th>
+                <th><code>AccountingReviewer</code></th>
+                <th><code>Administrator</code></th>
+                <th><code>ClientUser</code></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>1. Practice and commercial</strong></td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Key 2 clearance, activation &amp; pricing rules</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Draft engagements; Partner clears Key 2</td>
+                <td><span class="cell-badge cell-view">View-only</span><br/>Reads scoped client/engagement</td>
+                <td><span class="cell-badge cell-view">View-only</span><br/>Reads scoped summary</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>CRM, proposals &amp; Key 1; Partner clears Key 2</td>
+                <td><span class="cell-badge cell-view">View-only</span><br/>Billing readiness context</td>
+                <td><span class="cell-badge cell-view">View-only</span><br/>Billing readiness context</td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-full">Full</span><br/>Pricing rules &amp; commercial profiles</td>
+                <td><span class="cell-badge cell-none">None</span></td>
+              </tr>
+              <tr>
+                <td><strong>2. Workflow and tasks</strong></td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Plans &amp; exclusions (2-person rule)</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Plans &amp; exclusions (2-person rule)</td>
+                <td><span class="cell-badge cell-full">Full</span><br/>Executes assigned workflow tasks</td>
+                <td><span class="cell-badge cell-full">Full</span><br/>Executes assigned workflow tasks</td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Templates &amp; exclusions (2-person rule)</td>
+                <td><span class="cell-badge cell-none">None</span></td>
+              </tr>
+              <tr>
+                <td><strong>3. Client accounting and reporting</strong></td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Final Partner package release &amp; EOS</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Reviews mappings/packages; Partner releases</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>TB/GL intake; no mapping/package approval</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>TB/GL intake &amp; draft adjustments</td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Prepares TB/GL, mappings, journals &amp; FS</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Approves mappings, journals &amp; package stage</td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+              </tr>
+              <tr>
+                <td><strong>4. Audit and records</strong></td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>High-risk, LOR, opinion, report &amp; EQR</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Rank 3 review &amp; confirmations</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Fieldwork, PBC &amp; Rank 2 review</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Prepares workpapers &amp; procedures</td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+              </tr>
+              <tr>
+                <td><strong>5. Firm finance</strong></td>
+                <td><span class="cell-badge cell-view">View-only</span><br/>Revenue analytics &amp; EOS policy</td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Prepares invoices, receipts &amp; firm ledger</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Approves invoices, journals &amp; periods</td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-view">View-only</span><br/>Audited read-only oversight (10 queries)</td>
+                <td><span class="cell-badge cell-none">None</span></td>
+              </tr>
+              <tr>
+                <td><strong>6. People and time</strong></td>
+                <td><span class="cell-badge cell-full">Full</span><br/>Staffing, capacity &amp; time approval</td>
+                <td><span class="cell-badge cell-full">Full</span><br/>Staffing (up to Manager) &amp; time approval</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Logs own time &amp; leave</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Logs own time &amp; leave</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Logs own time &amp; leave</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Logs own time &amp; leave</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Logs own time &amp; leave</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Logs own time &amp; leave</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Logs own time &amp; leave</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Logs own time &amp; leave</td>
+                <td><span class="cell-badge cell-none">None</span></td>
+              </tr>
+              <tr>
+                <td><strong>7. Group consolidation</strong></td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Approves &amp; releases consolidation</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Manages &amp; reviews consolidation</td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-view">View-only</span><br/>Read context only</td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Prepares perimeter &amp; eliminations</td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>Independently reviews consolidation</td>
+                <td><span class="cell-badge cell-view">View-only</span><br/>Audited read-only oversight (3 queries)</td>
+                <td><span class="cell-badge cell-none">None</span></td>
+              </tr>
+              <tr>
+                <td><strong>8. Client portal</strong></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-approval">Requires another person's approval</span><br/>PBC uploads, replies, delegation &amp; packages</td>
+              </tr>
+              <tr>
+                <td><strong>9. Administration</strong></td>
+                <td><span class="cell-badge cell-view">View-only</span><br/>Pricing/templates co-owner; no Users &amp; Access</td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-none">None</span></td>
+                <td><span class="cell-badge cell-full">Full</span><br/>Users &amp; Access, Firm Settings &amp; M365</td>
+                <td><span class="cell-badge cell-none">None</span></td>
+              </tr>
+              <tr>
+                <td><strong>10. Knowledge library</strong></td>
+                <td><span class="cell-badge cell-full">Full</span><br/>Curates &amp; reads all tiers</td>
+                <td><span class="cell-badge cell-full">Full</span><br/>Curates &amp; reads all tiers</td>
+                <td><span class="cell-badge cell-view">View-only</span><br/>Reads Partners/Managers &amp; All Staff</td>
+                <td><span class="cell-badge cell-view">View-only</span><br/>Reads All Staff tier</td>
+                <td><span class="cell-badge cell-view">View-only</span><br/>Reads All Staff tier</td>
+                <td><span class="cell-badge cell-view">View-only</span><br/>Reads All Staff tier</td>
+                <td><span class="cell-badge cell-view">View-only</span><br/>Reads All Staff tier</td>
+                <td><span class="cell-badge cell-view">View-only</span><br/>Reads All Staff tier</td>
+                <td><span class="cell-badge cell-view">View-only</span><br/>Reads All Staff tier</td>
+                <td><span class="cell-badge cell-full">Full</span><br/>Curates &amp; reads all tiers</td>
+                <td><span class="cell-badge cell-none">None</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SECTION 8 -->
+      <section class="card-section" id="sec-8">
+        <h2>8. Which role should this person have?</h2>
+        <p>Follow these 5 questions from top to bottom to pick the right role for each person:</p>
+        <ol>
+          <li><strong>Q1: Do they work for the external client company?</strong> → Yes: <code>ClientUser</code> (<code>CLIENT</code> or <code>ENGAGEMENT</code>). No: go to Q2.</li>
+          <li><strong>Q2: Do they run platform administration, commercial CRM, or the firm's own internal billing/ledger?</strong> → User access &amp; settings: <code>Administrator</code> | Leads &amp; proposals: <code>RelationshipManager</code> | Preparing firm invoices/ledger: <code>FinanceManager</code> | Approving firm invoices/ledger: <code>FinanceReviewer</code>. Otherwise go to Q3.</li>
+          <li><strong>Q3: Do they focus strictly on client accounting (R2R) or Group Consolidation without performing audit fieldwork?</strong> → Preparing mappings, adjustments, statements, or consolidations: <code>AccountingPreparer</code> | Independently reviewing/approving them: <code>AccountingReviewer</code>. Otherwise go to Q4.</li>
+          <li><strong>Q4: Do they lead engagements, manage staffing, or sign off reviews?</strong> → Signing opinions, Key 2 risk clearance, activation &amp; EQR: <code>Partner</code> | Staffing, planning &amp; Rank 3 review: <code>Manager</code>. Otherwise go to Q5.</li>
+          <li><strong>Q5: Do they coordinate fieldwork and perform Rank 2 review, or prepare assigned workpapers?</strong> → Fieldwork lead &amp; Rank 2 review: <code>Senior</code> | Preparing assigned workpapers &amp; TB intake: <code>Staff</code>.</li>
+        </ol>
+
+        <figure class="diagram-figure">
+          <svg viewBox="0 0 760 490" role="img" aria-labelledby="diag-e-title diag-e-desc">
+            <title id="diag-e-title">Diagram E: 5-Question Role Selection Decision Tree</title>
+            <desc id="diag-e-desc">Vertical decision tree with 5 questions routing external contacts to ClientUser, operations staff to Administrator/RelationshipManager/FinanceManager/FinanceReviewer, accounting specialists to AccountingPreparer/AccountingReviewer, leaders to Partner/Manager, and fieldwork team to Senior/Staff.</desc>
+            <defs>
+              <marker id="arrow-e" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155" />
+              </marker>
+            </defs>
+            <!-- Q1 -->
+            <rect x="40" y="15" width="320" height="56" rx="8" fill="#F0E442" stroke="#6B6200" stroke-width="2"/>
+            <text x="200" y="40" text-anchor="middle" font-size="12.5" font-weight="700" fill="#000000">[Q1] External Client Contact or Firm Staff?</text>
+            <text x="200" y="58" text-anchor="middle" font-size="11.5" fill="#000000">Works for client vs. works for our firm</text>
+
+            <rect x="430" y="15" width="300" height="56" rx="24" fill="#0072B2" stroke="#003654" stroke-width="2"/>
+            <text x="580" y="40" text-anchor="middle" font-size="12.5" font-weight="700" fill="#FFFFFF">Assign: ClientUser</text>
+            <text x="580" y="58" text-anchor="middle" font-size="11.5" fill="#FFFFFF">Scope: CLIENT or ENGAGEMENT only</text>
+
+            <!-- Q2 -->
+            <rect x="40" y="105" width="320" height="56" rx="8" fill="#F0E442" stroke="#6B6200" stroke-width="2"/>
+            <text x="200" y="130" text-anchor="middle" font-size="12.5" font-weight="700" fill="#000000">[Q2] Admin, Commercial CRM, or Firm Finance?</text>
+            <text x="200" y="148" text-anchor="middle" font-size="11.5" fill="#000000">Internal firm operations vs. client delivery</text>
+
+            <rect x="430" y="95" width="300" height="76" rx="8" fill="#CC79A7" stroke="#5E2B47" stroke-width="2"/>
+            <text x="580" y="118" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">Assign Firm Operations Role:</text>
+            <text x="580" y="136" text-anchor="middle" font-size="11" fill="#FFFFFF">• Administrator | • RelationshipManager</text>
+            <text x="580" y="154" text-anchor="middle" font-size="11" fill="#FFFFFF">• FinanceManager | • FinanceReviewer</text>
+
+            <!-- Q3 -->
+            <rect x="40" y="195" width="320" height="56" rx="8" fill="#F0E442" stroke="#6B6200" stroke-width="2"/>
+            <text x="200" y="220" text-anchor="middle" font-size="12.5" font-weight="700" fill="#000000">[Q3] Specialist Client Accounting / Group Only?</text>
+            <text x="200" y="238" text-anchor="middle" font-size="11.5" fill="#000000">R2R &amp; Consolidation without audit fieldwork</text>
+
+            <rect x="430" y="195" width="300" height="62" rx="8" fill="#56B4E9" stroke="#004C70" stroke-width="2"/>
+            <text x="580" y="218" text-anchor="middle" font-size="12" font-weight="700" fill="#000000">Assign Accounting Role:</text>
+            <text x="580" y="236" text-anchor="middle" font-size="11" fill="#000000">• AccountingPreparer (Prepares TB/Mappings/FS)</text>
+            <text x="580" y="251" text-anchor="middle" font-size="11" fill="#000000">• AccountingReviewer (Approves Mappings/Packages)</text>
+
+            <!-- Q4 -->
+            <rect x="40" y="285" width="320" height="56" rx="8" fill="#F0E442" stroke="#6B6200" stroke-width="2"/>
+            <text x="200" y="310" text-anchor="middle" font-size="12.5" font-weight="700" fill="#000000">[Q4] Engagement Leadership, Staffing &amp; Sign-Off?</text>
+            <text x="200" y="328" text-anchor="middle" font-size="11.5" fill="#000000">Partner signing authority or Manager review</text>
+
+            <rect x="430" y="285" width="300" height="62" rx="8" fill="#009E73" stroke="#004D38" stroke-width="2"/>
+            <text x="580" y="308" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">Assign Leadership Role:</text>
+            <text x="580" y="326" text-anchor="middle" font-size="11" fill="#FFFFFF">• Partner (Key 2 Risk, Activation, Opinion &amp; Release)</text>
+            <text x="580" y="341" text-anchor="middle" font-size="11" fill="#FFFFFF">• Manager (Staffing, Planning &amp; Rank 3 Review)</text>
+
+            <!-- Q5 -->
+            <rect x="40" y="375" width="320" height="56" rx="8" fill="#F0E442" stroke="#6B6200" stroke-width="2"/>
+            <text x="200" y="400" text-anchor="middle" font-size="12.5" font-weight="700" fill="#000000">[Q5] Coordinates Fieldwork vs. Prepares Workpapers?</text>
+            <text x="200" y="418" text-anchor="middle" font-size="11.5" fill="#000000">Rank 2 reviewer vs. Rank 1 preparer</text>
+
+            <rect x="430" y="375" width="300" height="62" rx="24" fill="#009E73" stroke="#004D38" stroke-width="2"/>
+            <text x="580" y="398" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">Assign Fieldwork Role:</text>
+            <text x="580" y="416" text-anchor="middle" font-size="11" fill="#FFFFFF">• Senior (Coordinates Fieldwork &amp; Rank 2 Review)</text>
+            <text x="580" y="431" text-anchor="middle" font-size="11" fill="#FFFFFF">• Staff (Prepares Workpapers &amp; TB Intake)</text>
+
+            <!-- Connectors -->
+            <line x1="360" y1="43" x2="425" y2="43" stroke="#334155" stroke-width="2" marker-end="url(#arrow-e)"/>
+            <line x1="200" y1="71" x2="200" y2="100" stroke="#334155" stroke-width="2" marker-end="url(#arrow-e)"/>
+            <line x1="360" y1="133" x2="425" y2="133" stroke="#334155" stroke-width="2" marker-end="url(#arrow-e)"/>
+            <line x1="200" y1="161" x2="200" y2="190" stroke="#334155" stroke-width="2" marker-end="url(#arrow-e)"/>
+            <line x1="360" y1="223" x2="425" y2="223" stroke="#334155" stroke-width="2" marker-end="url(#arrow-e)"/>
+            <line x1="200" y1="251" x2="200" y2="280" stroke="#334155" stroke-width="2" marker-end="url(#arrow-e)"/>
+            <line x1="360" y1="313" x2="425" y2="313" stroke="#334155" stroke-width="2" marker-end="url(#arrow-e)"/>
+            <line x1="200" y1="341" x2="200" y2="370" stroke="#334155" stroke-width="2" marker-end="url(#arrow-e)"/>
+            <line x1="360" y1="403" x2="425" y2="403" stroke="#334155" stroke-width="2" marker-end="url(#arrow-e)"/>
+          </svg>
+          <figcaption class="diagram-caption">Diagram E: Follow questions Q1 through Q5 from top to bottom to identify the exact role code for each person on your list.</figcaption>
+        </figure>
+      </section>
+
+      <!-- SECTION 9 -->
+      <section class="card-section" id="sec-9">
+        <h2>9. How to fill in the request form</h2>
+        <p>Complete the 9 columns below (matching <code>auditsphere-security-template-role-assignment-request.csv</code>). Key rules verified from server code:</p>
+        <ul>
+          <li><strong>Exact Microsoft Sign-In Email:</strong> Provide the exact email address (UPN) used for Microsoft Entra ID sign-in. Server validation (<code>RoleAdministrationService.EmailLike</code>) requires a single <code>@</code> symbol, no spaces, and max 320 characters. <em>Policy note (<code>TO CONFIRM</code>): Whether personal email domains (e.g., <code>@gmail.com</code>) or shared mailboxes (e.g., <code>accounts@example.com</code>) are prohibited by firm policy is marked <code>TO CONFIRM</code> in Appendix B.</em></li>
+          <li><strong>Start Date:</strong> Access starts immediately when approved by the Administrator (future-dated <code>EffectiveFrom</code> &gt; 1 minute ahead is rejected by the server).</li>
+          <li><strong>Expiry (if temporary):</strong> Optional UTC date/time (must be at least 5 minutes in the future). Leave blank for <code>GROUP</code> grants (expiry is not supported on <code>GroupAccessGrant</code>).</li>
+        </ul>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Full name</th>
+                <th>Work email (the exact account used for Microsoft sign-in)</th>
+                <th>Staff or Client</th>
+                <th>Role requested</th>
+                <th>Scope (Firm-wide / which Client / which Engagement / which Group)</th>
+                <th>Start date</th>
+                <th>Expiry (if temporary)</th>
+                <th>Approved by</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Amira Al-Mansoor</td>
+                <td><code>amira.almansoor@example.com</code></td>
+                <td>Staff</td>
+                <td><code>Partner</code></td>
+                <td>Firm-wide</td>
+                <td>2026-11-01</td>
+                <td>—</td>
+                <td><code>managing.partner@example.com</code></td>
+                <td>Engagement Partner signing authority and Key 2 risk clearance</td>
+              </tr>
+              <tr>
+                <td>Tariq Haddad</td>
+                <td><code>tariq.haddad@example.com</code></td>
+                <td>Staff</td>
+                <td><code>Manager</code></td>
+                <td>Client: Gulf Horizon Trading LLC (CLI-2026-014)</td>
+                <td>2026-11-01</td>
+                <td>—</td>
+                <td><code>amira.almansoor@example.com</code></td>
+                <td>Audit Manager overseeing FY2026 statutory audit and accounting review</td>
+              </tr>
+              <tr>
+                <td>Lina Khoury</td>
+                <td><code>lina.khoury@example.com</code></td>
+                <td>Staff</td>
+                <td><code>Senior</code></td>
+                <td>Engagement: Gulf Horizon FY2026 Statutory Audit (ENG-2026-042)</td>
+                <td>2026-11-01</td>
+                <td>2027-03-31T18:00:00Z</td>
+                <td><code>tariq.haddad@example.com</code></td>
+                <td>Fieldwork lead through Q1 filing deadline</td>
+              </tr>
+              <tr>
+                <td>Rami Saleh</td>
+                <td><code>rami.saleh@example.com</code></td>
+                <td>Staff</td>
+                <td><code>Staff</code></td>
+                <td>Engagement: Gulf Horizon FY2026 Statutory Audit (ENG-2026-042)</td>
+                <td>2026-11-01</td>
+                <td>2027-02-28T18:00:00Z</td>
+                <td><code>tariq.haddad@example.com</code></td>
+                <td>Assigned to cash and receivables working papers</td>
+              </tr>
+              <tr>
+                <td>Nadia Farouk</td>
+                <td><code>nadia.farouk@example.com</code></td>
+                <td>Staff</td>
+                <td><code>RelationshipManager</code></td>
+                <td>Firm-wide</td>
+                <td>2026-11-01</td>
+                <td>—</td>
+                <td><code>amira.almansoor@example.com</code></td>
+                <td>Commercial pipeline and proposal preparation</td>
+              </tr>
+              <tr>
+                <td>Karim Mansour</td>
+                <td><code>karim.mansour@example.com</code></td>
+                <td>Staff</td>
+                <td><code>FinanceManager</code></td>
+                <td>Firm-wide</td>
+                <td>2026-11-01</td>
+                <td>—</td>
+                <td><code>amira.almansoor@example.com</code></td>
+                <td>Firm billing preparation and firm ledger journals</td>
+              </tr>
+              <tr>
+                <td>Salma Darwish</td>
+                <td><code>salma.darwish@example.com</code></td>
+                <td>Staff</td>
+                <td><code>FinanceReviewer</code></td>
+                <td>Firm-wide</td>
+                <td>2026-11-01</td>
+                <td>—</td>
+                <td><code>amira.almansoor@example.com</code></td>
+                <td>Independent maker-checker reviewer for firm invoices and journals</td>
+              </tr>
+              <tr>
+                <td>Youssef Nassar</td>
+                <td><code>youssef.nassar@example.com</code></td>
+                <td>Staff</td>
+                <td><code>AccountingPreparer</code></td>
+                <td>Group: Gulf Horizon Holdings Group (GRP-2026-003)</td>
+                <td>2026-11-01</td>
+                <td>—</td>
+                <td><code>tariq.haddad@example.com</code></td>
+                <td>Group consolidation preparation (Group grants do not support expiry)</td>
+              </tr>
+              <tr>
+                <td>Huda Zaki</td>
+                <td><code>huda.zaki@example.com</code></td>
+                <td>Staff</td>
+                <td><code>AccountingReviewer</code></td>
+                <td>Client: Gulf Horizon Trading LLC (CLI-2026-014)</td>
+                <td>2026-11-01</td>
+                <td>—</td>
+                <td><code>tariq.haddad@example.com</code></td>
+                <td>Independent reviewer for trial balance mappings and financial packages</td>
+              </tr>
+              <tr>
+                <td>Omar Barakat</td>
+                <td><code>omar.barakat@example.com</code></td>
+                <td>Staff</td>
+                <td><code>Administrator</code></td>
+                <td>Firm-wide</td>
+                <td>2026-11-01</td>
+                <td>—</td>
+                <td><code>managing.partner@example.com</code></td>
+                <td>Users &amp; Access administration and audited read-only oversight</td>
+              </tr>
+              <tr>
+                <td>Layla Nasser</td>
+                <td><code>layla.nasser@example.com</code></td>
+                <td>Client</td>
+                <td><code>ClientUser</code></td>
+                <td>Engagement: Gulf Horizon FY2026 Statutory Audit (ENG-2026-042)</td>
+                <td>2026-11-01</td>
+                <td>2027-04-30T18:00:00Z</td>
+                <td><code>amira.almansoor@example.com</code></td>
+                <td>Client Finance Lead — primary contact for PBC uploads and LOR response</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SECTION 10 -->
+      <section class="card-section" id="sec-10">
+        <h2>10. What happens after you reply</h2>
+        <ol>
+          <li><strong>Request received:</strong> Your Partner or Administrator checks role/scope alignment and confirms maker-checker pairs.</li>
+          <li><strong>Administrator verifies identity:</strong> Searches <code>Users &amp; Access</code> to check whether the user already exists.</li>
+          <li><strong>Identity bound or invited:</strong> Uses <code>Bind a roster identity</code> to pre-register the user's exact Microsoft sign-in email, display name, and account type (<code>STAFF</code> or <code>CLIENT</code>).</li>
+          <li><strong>Role and scope assigned:</strong> Saves the grant in <code>Assign role and scope</code>, writing an immutable <code>RoleGrantAuditEvent</code> and generating a copyable invitation link.</li>
+          <li><strong>First sign-in:</strong> The user signs in with their Microsoft work account (and if <code>ClientUser</code>, accepts security terms <code>PORTAL-SECURITY-2026-1</code> once the 4 onboarding gates are met).</li>
+          <li><strong>Confirmation:</strong> The Administrator verifies the active grant and confirms completion back to you. <em>(Note: Administrator turnaround SLA and invitation link TTL are marked <code>TO CONFIRM</code> in Appendix B.)</em></li>
+        </ol>
+
+        <figure class="diagram-figure">
+          <svg viewBox="0 0 760 440" role="img" aria-labelledby="diag-f-title diag-f-desc">
+            <title id="diag-f-title">Diagram F: End-to-End Onboarding Sequence from Request to First Sign-In</title>
+            <desc id="diag-f-desc">Sequence diagram showing 4 lifelines (Sponsor/Partner, AuditSphere Administrator, AuditSphere Server, and Assigned User) executing steps 1 through 6 from submitting the request table to roster binding, role grant creation, invitation link delivery, Microsoft sign-in, and confirmation.</desc>
+            <defs>
+              <marker id="arrow-f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155" />
+              </marker>
+            </defs>
+            <!-- Participant Headers -->
+            <rect x="20" y="15" width="150" height="46" rx="6" fill="#E69F00" stroke="#7A5200" stroke-width="2"/>
+            <text x="95" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="#000000">1. Partner / Client Lead</text>
+
+            <rect x="210" y="15" width="150" height="46" rx="6" fill="#CC79A7" stroke="#5E2B47" stroke-width="2"/>
+            <text x="285" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">2. Administrator</text>
+
+            <rect x="400" y="15" width="150" height="46" rx="6" fill="#56B4E9" stroke="#004C70" stroke-width="2"/>
+            <text x="475" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="#000000">3. AuditSphere Server</text>
+
+            <rect x="590" y="15" width="150" height="46" rx="6" fill="#009E73" stroke="#004D38" stroke-width="2"/>
+            <text x="665" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">4. Assigned User</text>
+
+            <!-- Lifelines -->
+            <line x1="95" y1="61" x2="95" y2="415" stroke="#64748b" stroke-width="2" stroke-dasharray="4,4"/>
+            <line x1="285" y1="61" x2="285" y2="415" stroke="#64748b" stroke-width="2" stroke-dasharray="4,4"/>
+            <line x1="475" y1="61" x2="475" y2="415" stroke="#64748b" stroke-width="2" stroke-dasharray="4,4"/>
+            <line x1="665" y1="61" x2="665" y2="415" stroke="#64748b" stroke-width="2" stroke-dasharray="4,4"/>
+
+            <!-- Messages -->
+            <line x1="95" y1="95" x2="280" y2="95" stroke="#334155" stroke-width="2" marker-end="url(#arrow-f)"/>
+            <text x="190" y="88" text-anchor="middle" font-size="11" font-weight="700" fill="#0f172a">1. Sends Role Request CSV / Table</text>
+
+            <line x1="285" y1="140" x2="470" y2="140" stroke="#334155" stroke-width="2" marker-end="url(#arrow-f)"/>
+            <text x="380" y="133" text-anchor="middle" font-size="11" font-weight="700" fill="#0f172a">2. Searches local users &amp; checks SoD</text>
+
+            <line x1="285" y1="185" x2="470" y2="185" stroke="#334155" stroke-width="2" marker-end="url(#arrow-f)"/>
+            <text x="380" y="178" text-anchor="middle" font-size="11" font-weight="700" fill="#0f172a">3. Binds roster identity (STAFF / CLIENT)</text>
+
+            <line x1="285" y1="230" x2="470" y2="230" stroke="#334155" stroke-width="2" marker-end="url(#arrow-f)"/>
+            <text x="380" y="223" text-anchor="middle" font-size="11" font-weight="700" fill="#0f172a">4. Assigns Role + Scope + Justification</text>
+
+            <line x1="475" y1="265" x2="290" y2="265" stroke="#334155" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#arrow-f)"/>
+            <text x="380" y="258" text-anchor="middle" font-size="10.5" fill="#334155">Logs AuditEvent, bumps SessionEpoch &amp; returns Link</text>
+
+            <line x1="285" y1="305" x2="660" y2="305" stroke="#334155" stroke-width="2" marker-end="url(#arrow-f)"/>
+            <text x="475" y="298" text-anchor="middle" font-size="11" font-weight="700" fill="#0f172a">5. Sends copyable invitation link</text>
+
+            <line x1="665" y1="350" x2="480" y2="350" stroke="#334155" stroke-width="2" marker-end="url(#arrow-f)"/>
+            <text x="570" y="343" text-anchor="middle" font-size="11" font-weight="700" fill="#0f172a">Signs in via Microsoft Entra ID</text>
+
+            <line x1="475" y1="395" x2="100" y2="395" stroke="#334155" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#arrow-f)"/>
+            <text x="285" y="388" text-anchor="middle" font-size="11" font-weight="700" fill="#0f172a">6. Confirms active grant &amp; verified sign-in</text>
+          </svg>
+          <figcaption class="diagram-caption">Diagram F: Six-step onboarding sequence from your email request through Administrator roster binding, grant assignment, and the user's first Microsoft sign-in.</figcaption>
+        </figure>
+      </section>
+
+      <!-- SECTION 11 -->
+      <section class="card-section" id="sec-11">
+        <h2>11. Changing or removing access</h2>
+        <ul>
+          <li><strong>When someone leaves or rotates off an engagement:</strong> Email your Administrator with the person's name, work email, whether to <strong>revoke a single role/scope grant</strong> or <strong>disable their entire account</strong>, and the reason/approver.</li>
+          <li><strong>Automatic Expiry (<code>RoleGrantExpiry</code>):</strong> When <code>ExpiresAt</code> passes on a <code>FIRM_WIDE</code>, <code>CLIENT</code>, or <code>ENGAGEMENT</code> grant, the server automatically marks it revoked with <code>Source = "EXPIRY"</code> and <code>NewRole = "EXPIRED"</code> during session evaluation.</li>
+          <li><strong>Immediate Session Invalidation (<code>SessionEpoch</code>):</strong> Every grant change, expiry, revocation, or account disablement increments <code>AppUser.SessionEpoch</code>, immediately invalidating any open browser session on the next request.</li>
+          <li><strong>Immutable Audit History (<code>RoleGrantAuditEvent</code>):</strong> Revoking access never deletes past working paper sign-offs or audit history; all grant changes remain permanently recorded in <code>RoleGrantAuditEvents</code>.</li>
+        </ul>
+      </section>
+
+      <!-- SECTION 12 -->
+      <section class="card-section" id="sec-12">
+        <h2>12. Frequently Asked Questions (FAQ) and Glossary</h2>
+        <h3>Frequently Asked Questions</h3>
+        <ol>
+          <li><strong>Can one person hold multiple roles?</strong> Yes, across the same or different scopes—but holding two roles never permits self-review.</li>
+          <li><strong>Does <code>Administrator</code> include <code>Partner</code> or <code>FinanceReviewer</code> authority?</strong> No. Administrator access never confers Partner, FinanceManager, or FinanceReviewer authority.</li>
+          <li><strong>Why is the Client Portal locked right after granting <code>ClientUser</code>?</strong> It opens only after Key 1 acceptance, Key 2 Partner risk clearance, the 50% advance milestone marked <code>PAID</code>, and Partner activation.</li>
+          <li><strong>Can a <code>ClientUser</code> delegate a PBC request?</strong> Yes—if they are the request owner and the client's primary contact, they can delegate a PBC request to another active <code>ClientUser</code> of the same client.</li>
+          <li><strong>What if a commercial proposal is revised after Key 1 acceptance?</strong> Key 1 is bound to the exact proposal revision; a new revision requires re-acceptance.</li>
+          <li><strong>Can a <code>GROUP</code> grant have an expiry date?</strong> No; <code>RoleAssignmentService</code> blocks <code>ExpiresAt</code> on <code>GROUP</code> grants.</li>
+          <li><strong>Can we schedule a future start date for a grant?</strong> No; <code>EffectiveFrom</code> more than 1 minute in the future is rejected by the server.</li>
+          <li><strong>Does <code>CLIENT</code> scope grant access to a parent consolidation <code>GROUP</code>?</strong> No; group consolidation requires a separate <code>GROUP</code> grant (or <code>FIRM_WIDE</code> where accepted).</li>
+          <li><strong>How do Role Grants relate to Engagement Staffing Ranks?</strong> Security Role Grants open routes/capabilities; Engagement Staffing (<code>ENGAGEMENT_PARTNER</code> rank 4 down to <code>STAFF_ASSOCIATE</code> rank 1) governs engagement procedure review thresholds and Key 2 risk clearance.</li>
+          <li><strong>Are Microsoft Graph write permissions required?</strong> No; optional M365 write capabilities are disabled by default, and local <code>Bind a roster identity</code> works without them.</li>
+        </ol>
+
+        <h3>Glossary</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Term</th><th>Plain-English Definition</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Dual-Key Acceptance</strong></td><td>Onboarding control requiring Key 1 (client acceptance of exact proposal revision) + Key 2 (staffed Partner unconditional risk clearance) + paid 50% advance before engagement activation.</td></tr>
+              <tr><td><strong>Engagement</strong></td><td>A single audit, assurance, or accounting project for a client and financial period.</td></tr>
+              <tr><td><strong>EQR (Engagement Quality Review)</strong></td><td>Independent quality concurrence by a <code>Partner</code> who is not the Engagement Partner.</td></tr>
+              <tr><td><strong>FSLI (Financial Statement Line Item)</strong></td><td>Standardized reporting line to which client trial balance accounts are mapped.</td></tr>
+              <tr><td><strong>LOR (Letter of Representation)</strong></td><td>Signed representation letter from client management verified by the <code>Partner</code> prior to opinion issuance.</td></tr>
+              <tr><td><strong>Maker-Checker</strong></td><td>Server rule requiring that the preparer (<code>User A</code>) and reviewer/approver (<code>User B</code>) are two distinct user accounts.</td></tr>
+              <tr><td><strong>PBC (Provided by Client)</strong></td><td>Information and document requests answered by <code>ClientUser</code> contacts in <code>/portal</code>.</td></tr>
+              <tr><td><strong>Role Grant</strong></td><td>Database record linking a user, a role code, a scope, an effective timestamp, and an optional expiry timestamp.</td></tr>
+              <tr><td><strong>Roster Identity</strong></td><td>Pre-registered user record created via <code>Bind a roster identity</code> before the person's first Microsoft sign-in.</td></tr>
+              <tr><td><strong>Scope</strong></td><td>Where a grant applies: <code>FIRM_WIDE</code>, <code>CLIENT</code>, <code>ENGAGEMENT</code>, or <code>GROUP</code>.</td></tr>
+              <tr><td><strong>Session Epoch</strong></td><td>Counter incremented on every grant change or revocation to invalidate stale browser sessions immediately.</td></tr>
+              <tr><td><strong>SRM (Significant Risk / Materiality)</strong></td><td>Planning materiality and significant risk record locked by the <code>Partner</code>.</td></tr>
+              <tr><td><strong>TB / GL</strong></td><td>Client Trial Balance and General Ledger imported for audit fieldwork and R2R financial statements.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SECTION 13 -->
+      <section class="card-section admin-appendix" id="sec-13">
+        <h2>13. Appendices (Administrator Walkthrough &amp; Source Evidence Map)</h2>
+
+        <h3>Appendix A: Administrator Walkthrough (<code>Administration → Users &amp; Access</code>)</h3>
+        <p><em>For the AuditSphere Administrator (<code>Administrator@FIRM_WIDE</code>) operating <code>/app/admin/access</code> and <code>/app/admin/directory</code>:</em></p>
+        <ol>
+          <li><strong>Search local users:</strong> Filter existing accounts by name, email, role, or status. Each card shows active grant badges (formatted via <code>codeLabel</code>), <code>SessionEpoch</code>, <code>Copy invitation link</code>, <code>Revoke</code>, and <code>Disable user</code> / <code>Enable user</code>.</li>
+          <li><strong>Bind a roster identity:</strong> Pre-register a user before first sign-in with <code>Work email</code> (exact Entra UPN, max 320 chars), <code>Display name</code>, <code>User type</code> (<code>STAFF</code> or <code>CLIENT</code>), linked <code>Client</code> (required for <code>CLIENT</code>), <code>Binding source</code> (<code>APPROVED_ROSTER</code> or <code>VERIFIED_SIGN_IN</code>), and optional <code>External subject ID</code> / <code>External tenant ID</code>.</li>
+          <li><strong>Assign role and scope:</strong> Select the user, choose the role in <code>#local-role</code> (10 staff roles for <code>STAFF</code>; <code>ClientUser</code> for <code>CLIENT</code>), pick the scope (<code>FIRM_WIDE</code>, <code>CLIENT</code>, <code>ENGAGEMENT</code>, or <code>GROUP</code>), set optional <code>Expires at</code> (&gt;= 5 mins in future; leave blank for <code>GROUP</code>), and enter the required approval <code>Reason</code>.</li>
+          <li><strong>Copy invitation link:</strong> Click <code>Copy invitation link</code> on the grant row to copy the <code>/api/ui/administration/access/invitations/{id}</code> URL.</li>
+          <li><strong>Optional Microsoft administration &amp; Microsoft directory:</strong> Capabilities <code>TENANT_USER_PROVISIONING</code> (<code>User.Create</code>), <code>GUEST_INVITATION</code> (<code>User.Invite.All</code>), and <code>GROUP_MEMBERSHIP</code> (<code>GroupMember.ReadWrite.All</code>) are disabled by default (<code>NOT_GRANTED</code> / <code>BLOCKED_EXTERNAL</code> in <code>status.json</code>) until tenant admin Graph consent is granted and verified. Local roster binding works without them.</li>
+        </ol>
+
+        <h3>Appendix B: Source Evidence Map, Non-Assignable Codes &amp; Open Questions (<code>TO CONFIRM</code>)</h3>
+        <p><strong>Non-Assignable Backend Guard Role Codes:</strong> Seven legacy/guard codes appear in backend <code>RequiredRoles</code> arrays (<code>Reviewer</code>, <code>SeniorManager</code>, <code>EngagementLeader</code>, <code>Auditor</code>, <code>Accountant</code>, <code>CommercialManager</code>, <code>RecordsCustodian</code>) but are not in <code>RoleAdministrationService.AllowedRoles</code> and cannot be granted to users. Engagement staffing levels (<code>ENGAGEMENT_PARTNER</code> rank 4, <code>AUDIT_MANAGER</code> rank 3, <code>SENIOR_AUDITOR</code> rank 2, <code>STAFF_ASSOCIATE</code> rank 1) are engagement staffing allocations in <code>ResourcePlanning.cs</code>.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Topic</th><th>Observed Code Behavior</th><th>Open Question (<code>TO CONFIRM</code>)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>TC-01</strong></td><td>Personal Email Domains &amp; Shared Mailboxes</td><td><code>RoleAdministrationService.EmailLike</code> checks only for a single <code>@</code>, no whitespace, and length &lt;= 320.</td><td><code>TO CONFIRM</code>: Should firm policy reject consumer domains (<code>@gmail.com</code>) or shared mailboxes (<code>finance@example.com</code>)?</td></tr>
+              <tr><td><strong>TC-02</strong></td><td>Invitation Link Expiration (TTL)</td><td><code>GetInvitationLinkAsync</code> has no separate link TTL timer; link stays valid while the <code>RoleGrant</code> is active.</td><td><code>TO CONFIRM</code>: Should copyable invitation links expire after a set window (e.g., 72 hours) if unused?</td></tr>
+              <tr><td><strong>TC-03</strong></td><td>Administrator Turnaround SLA</td><td>Grant activation is immediate once saved in UI, but human processing time is operational.</td><td><code>TO CONFIRM</code>: What turnaround SLA (e.g., 1 business day) should be promised in Sections 1 &amp; 10?</td></tr>
+              <tr><td><strong>TC-04</strong></td><td>Oversight Expiry &amp; Reviewer Policy (<code>D-OV-04</code>)</td><td><code>Administrator@FIRM_WIDE</code> logs immutable <code>AdministratorOversightAccessEvent</code> on 13 GET queries.</td><td><code>TO CONFIRM</code>: Owner decision <code>D-OV-04</code> on oversight window expiry and independent review of Oversight History.</td></tr>
+              <tr><td><strong>TC-05</strong></td><td>Live Entra / Graph Consent (<code>BLOCKED_EXTERNAL</code>)</td><td><code>docs/execution/status.json</code> marks live Graph provisioning gates as <code>BLOCKED_EXTERNAL</code>.</td><td><code>TO CONFIRM</code>: Which deployment tenants will enable optional Graph write capabilities vs. local roster binding only?</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var htmlEl = document.documentElement;
+      var themeBtn = document.getElementById('btn-theme-toggle');
+      var expandBtn = document.getElementById('btn-expand-all');
+      var collapseBtn = document.getElementById('btn-collapse-all');
+
+      if (themeBtn) {
+        themeBtn.addEventListener('click', function () {
+          var current = htmlEl.getAttribute('data-theme');
+          var next = current === 'dark' ? 'light' : 'dark';
+          htmlEl.setAttribute('data-theme', next);
+        });
+      }
+
+      if (expandBtn) {
+        expandBtn.addEventListener('click', function () {
+          var cards = document.querySelectorAll('details.role-card');
+          for (var i = 0; i < cards.length; i++) {
+            cards[i].setAttribute('open', '');
+          }
+        });
+      }
+
+      if (collapseBtn) {
+        collapseBtn.addEventListener('click', function () {
+          var cards = document.querySelectorAll('details.role-card');
+          for (var i = 0; i < cards.length; i++) {
+            cards[i].removeAttribute('open');
+          }
+        });
+      }
+
+      function expandAllForPrint() {
+        var cards = document.querySelectorAll('details.role-card');
+        for (var i = 0; i < cards.length; i++) {
+          cards[i].setAttribute('open', '');
+        }
+      }
+
+      window.addEventListener('beforeprint', expandAllForPrint);
+      if (window.location.search.indexOf('print=1') !== -1) {
+        expandAllForPrint();
+      }
+    })();
+  </script>
+</body>
+</html>

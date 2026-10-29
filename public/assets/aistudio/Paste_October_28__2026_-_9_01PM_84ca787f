@@ -1,0 +1,1269 @@
+# AuditSphere "Roles & Access" End-User Guide Implementation
+
+This implementation delivers the complete documentation suite for **AuditSphere** (AuditSphereOps: .NET 10 modular monolith, Angular 22 UI with Staff and Client portals, PostgreSQL 18, Microsoft Entra ID authentication) in accordance with the repository conventions, security standards, and non-negotiable anti-hallucination protocols.
+
+---
+
+## Phase 1 & Phase 2 Checkpoint: Role Inventory & Content Outline
+
+### 1. Role Inventory Summary
+
+| Code Identifier | UI Display Label | Account Type | Allowed Scopes | Key Authority & Server-Enforced Boundaries |
+| :--- | :--- | :--- | :--- | :--- |
+| `ENGAGEMENT_PARTNER` | **Engagement Partner** | Staff | `FIRM_WIDE`, `CLIENT`, `ENGAGEMENT` | Full engagement sign-off; Dual-Key partner clearance; cannot act as EQCR on the same engagement. |
+| `QUALITY_REVIEWER` | **Engagement Quality Reviewer** | Staff | `ENGAGEMENT` | Independent review (M2-02); cannot prepare workpapers; cannot serve as team member. |
+| `AUDIT_MANAGER` | **Audit Manager** | Staff | `CLIENT`, `ENGAGEMENT` | Workpaper first-level review; milestone reviews; cannot sign audit opinion. |
+| `SENIOR_AUDITOR` | **Senior Auditor** | Staff | `ENGAGEMENT` | Fieldwork lead; complex substantive procedures; junior review; cannot do final sign-off. |
+| `STAFF_AUDITOR` | **Staff Auditor** | Staff | `ENGAGEMENT` | Workpaper preparation, fieldwork testing; no self-review permitted. |
+| `ADMINISTRATOR` | **Firm Administrator** | Staff | `FIRM_WIDE` | Identity binding, role/scope assignment; **no partner/audit opinion authority**. |
+| `FIRM_FINANCE` | **Practice Finance Lead** | Staff | `FIRM_WIDE`, `CLIENT` | Invoicing, WIP, billing, advance fee verification; cannot sign audit deliverables. |
+| `CLIENT_PRIMARY` | **Client Finance Lead** | Client | `CLIENT`, `ENGAGEMENT` | Client Dual-Key engagement acceptance; primary deliverable receipt; PBC coordination. |
+| `CLIENT_CONTRIBUTOR`| **Client Contributor** | Client | `CLIENT`, `ENGAGEMENT` | Uploads PBC evidence, trial balance files; view-only on final audit files. |
+| `CLIENT_VIEWER` | **Client Observer** | Client | `CLIENT`, `ENGAGEMENT` | Read-only visibility to published reports and tracking status. |
+
+---
+
+# Deliverable D1: Canonical Markdown Guide
+
+```markdown
+<!-- File: docs/user-guides/auditsphere-user-guide-roles-and-access-current.md -->
+
+# AuditSphere Roles & Access Guide: End-User & Administrator Reference
+
+> **Audience:** Firm Partners, Office Managers, Client Finance Leads, and AuditSphere Administrators.  
+> **Reading Time:** ~10 minutes.
+
+---
+
+## 1. What We Need From You
+
+::: important Action Required
+To configure access to AuditSphere for your firm or organization, please complete the **Role Assignment Request Form** (see [Section 9](#9-how-to-fill-in-the-request-form) and [Section D4](#role-assignment-request-csv-template)) and email it to:
+
+- **Destination:** `auditsphere-admin@example.com`
+- **Subject Line:** `[Access Request] - <Firm/Client Name> - <Target Engagement/Scope>`
+- **Deadline:** `[Insert Date / 5 Business Days Prior to Fieldwork Commencement]`
+
+*Every individual must use their official corporate work email address associated with their Microsoft Entra ID (formerly Azure AD) tenant.*
+:::
+
+---
+
+## 2. 60-Second Overview
+
+AuditSphere separates access into two distinct, isolated portals:
+1. **Staff Portal:** For accounting firm partners, audit managers, fieldwork auditors, and firm administrators.
+2. **Client Portal:** For client finance directors, controllers, accounting staff, and board observers.
+
+Sign-in is authenticated exclusively through **Microsoft Entra ID**. A user cannot see or perform anything until an Administrator assigns a specific **Role** paired with an authorized **Scope**.
+
+```mermaid
+flowchart TD
+    classDef staff fill:#005082,stroke:#002b49,stroke-width:2px,color:#ffffff;
+    classDef client fill:#f57c00,stroke:#b65d00,stroke-width:2px,color:#ffffff;
+    classDef system fill:#455a64,stroke:#263238,stroke-width:2px,color:#ffffff;
+
+    A[User Signs In via Microsoft Entra ID]:::system --> B{System Checks Active Grant}:::system
+    B -->|Staff Account| C[Staff Portal]:::staff
+    B -->|Client Account| D[Client Portal]:::client
+    B -->|No Grant / Inactive| E[Access Denied Screen]:::system
+    C --> F[Scope Boundary: Firm / Client / Engagement]:::staff
+    D --> G[Scope Boundary: Organization / Engagement]:::client
+```
+*Diagram A: High-level sign-in and authorization flow.*
+
+---
+
+## 3. Role Plus Scope
+
+Your permissions in AuditSphere are determined by combining two distinct questions:
+- **Role (Who you are):** What actions and screens are you qualified and authorized to perform?
+- **Scope (Where you may act):** In which specific client, engagement, or organizational branch are you authorized to act?
+
+### The Scope Hierarchy
+- **Firm-Wide (`FIRM_WIDE`):** Applies across all clients, engagements, and administrative operations in the practice. Reserved for Firm Administrators, Managing Partners, and Practice Finance Leads.
+- **Group (`GROUP`):** Applies across a designated parent entity and its audited subsidiaries in a consolidation engagement.
+- **Client (`CLIENT`):** Covers all historical, active, and recurring engagements for a single client entity.
+- **Engagement (`ENGAGEMENT`):** Restricted strictly to a single project (e.g., *Acme Corp - FY2026 Statutory Audit*). Most audit staff and client contributors operate solely at this level.
+
+```mermaid
+flowchart TD
+    classDef firm fill:#005082,stroke:#002b49,stroke-width:2px,color:#ffffff;
+    classDef group fill:#007acc,stroke:#004f84,stroke-width:2px,color:#ffffff;
+    classDef client fill:#009688,stroke:#005b52,stroke-width:2px,color:#ffffff;
+    classDef eng fill:#7b1fa2,stroke:#4a148c,stroke-width:2px,color:#ffffff;
+
+    FW[Firm-Wide Scope<br/>Managing Partners & Admins]:::firm
+    FW --> GRP[Group Scope<br/>Multi-Entity Consolidations]:::group
+    FW --> CLT[Client Scope<br/>Client-Level Oversight]:::client
+    GRP --> ENG1[Engagement Scope: Parent Co]:::eng
+    GRP --> ENG2[Engagement Scope: Subsidiary A]:::eng
+    CLT --> ENG3[Engagement Scope: Single Audit]:::eng
+```
+*Diagram B: Scope boundary containment hierarchy.*
+
+---
+
+## 4. Role Cards
+
+### Staff Roles
+
+#### 1. Engagement Partner (`ENGAGEMENT_PARTNER`)
+- **Summary & Titles:** Engagement Lead, Audit Partner, Signing Director.
+- **Daily Responsibilities:** Engagement strategy, client relationship leadership, technical risk clearance, deliverable release, and final opinion sign-off.
+- **What They Can Do:** Dual-Key engagement clearance; approve audit plans; clear significant risks; sign audit opinion reports; lock/archive engagements.
+- **What They Cannot Do:** Cannot act as the Engagement Quality Reviewer (EQCR) on their own engagement; cannot bypass dual-key client acceptance.
+- **Decisions Owned:** Final audit opinion, risk tolerance acceptance, issuance of audit deliverables.
+- **Handoffs & Review:** Receives completed workpapers from Audit Manager; hands off to EQCR for independent review.
+- **Allowed Scopes:** `ENGAGEMENT`, `CLIENT`, `FIRM_WIDE`.
+- **Screens Reached:** Engagement Dashboard, Practice Overview, Risk & Strategy, Partner Sign-off, Financial Reports.
+- **Access Termination:** Revoked or expired by Firm Administrator in Users & Access.
+
+#### 2. Engagement Quality Reviewer (`QUALITY_REVIEWER`)
+- **Summary & Titles:** EQCR Partner, Technical Reviewer, Concurring Reviewer.
+- **Daily Responsibilities:** Independent objective evaluation of significant judgments, calculations, and reporting disclosures prior to report issuance (M2-02).
+- **What They Can Do:** Review all engagement workpapers, audit plans, and partner risk memos; record formal EQCR concurring sign-off.
+- **What They Cannot Do:** Cannot prepare workpapers; cannot direct fieldwork; cannot sign the primary audit report.
+- **Decisions Owned:** Objective concurrence with the engagement team's conclusions.
+- **Handoffs & Review:** Reviews work prepared by Manager and Partner; provides clearance back to Engagement Partner.
+- **Allowed Scopes:** `ENGAGEMENT`.
+- **Screens Reached:** Engagement File, Significant Judgments Review, EQCR Sign-Off Console.
+- **Access Termination:** Revoked upon engagement archiving or by Administrator.
+
+#### 3. Audit Manager (`AUDIT_MANAGER`)
+- **Summary & Titles:** Audit Manager, Engagement Manager, Senior Manager.
+- **Daily Responsibilities:** Fieldwork supervision, timeline tracking, audit plan execution, initial workpaper review, and review note management.
+- **What They Can Do:** Allocate audit procedures; issue Provided-by-Client (PBC) requests; review and reject/approve fieldwork; sign off manager milestones.
+- **What They Cannot Do:** Cannot execute final partner release; cannot grant system roles.
+- **Decisions Owned:** Audit procedure completion, fieldwork readiness, review-point clearance.
+- **Handoffs & Review:** Receives work from Senior/Staff Auditors; escalates unresolved findings to Engagement Partner.
+- **Allowed Scopes:** `ENGAGEMENT`, `CLIENT`.
+- **Screens Reached:** Workflow & Tasks, PBC Manager, Workpaper Review, Time & Budgets.
+- **Access Termination:** Revoked by Administrator upon engagement completion.
+
+#### 4. Senior Auditor (`SENIOR_AUDITOR`)
+- **Summary & Titles:** Senior Auditor, Fieldwork In-Charge, Audit Senior.
+- **Daily Responsibilities:** Execution of complex audit sections (e.g., revenue, financial instruments), initial staff review, and client fieldwork coordination.
+- **What They Can Do:** Prepare complex workpapers; review junior auditor workpapers; draft PBC requests; reconcile Trial Balance (TB) and General Ledger (GL).
+- **What They Cannot Do:** Cannot perform final sign-off; cannot close review points raised by Manager or Partner.
+- **Decisions Owned:** Technical execution of assigned fieldwork sections.
+- **Handoffs & Review:** Reviews Staff Auditor submissions; submits completed sections to Audit Manager.
+- **Allowed Scopes:** `ENGAGEMENT`.
+- **Screens Reached:** Audit Workpapers, Substantive Testing, PBC Tracker, Evidence Upload.
+- **Access Termination:** Automated expiry on grant end-date or manual revocation.
+
+#### 5. Staff Auditor (`STAFF_AUDITOR`)
+- **Summary & Titles:** Staff Auditor, Junior Auditor, Audit Associate.
+- **Daily Responsibilities:** Substantive testing, sample vouching, PBC reconciliation, and working paper preparation.
+- **What They Can Do:** Create and edit assigned workpapers; verify uploaded PBC documents; log audit queries.
+- **What They Cannot Do:** Cannot approve or review own workpapers (separation of duties); cannot close PBC items without senior sign-off.
+- **Decisions Owned:** Accurate documentation of testing observations.
+- **Handoffs & Review:** Hands off all work to Senior Auditor or Manager.
+- **Allowed Scopes:** `ENGAGEMENT`.
+- **Screens Reached:** My Tasks, Working Papers, PBC Request List, Evidence Viewer.
+- **Access Termination:** Expiry date reached or Administrator revocation.
+
+#### 6. Firm Administrator (`ADMINISTRATOR`)
+- **Summary & Titles:** System Administrator, IT Systems Lead, Practice Operations Admin.
+- **Daily Responsibilities:** Identity lifecycle management, roster binding, role assignment, and Microsoft Entra tenant connection oversight.
+- **What They Can Do:** Search users, bind roster identities, grant/revoke roles and scopes, generate invitation links.
+- **What They Cannot Do:** **Administrator access confers NO Partner authority.** Cannot view confidential audit findings, clear audit risks, or sign off deliverables.
+- **Decisions Owned:** Identity verification and role-grant provisioning.
+- **Handoffs & Review:** Provisions access upon authorized request from Managing Partner or HR.
+- **Allowed Scopes:** `FIRM_WIDE`.
+- **Screens Reached:** Users & Access, Roster Management, Directory Sync, Audit Log Viewer.
+- **Access Termination:** Controlled by Firm Owner / Azure Entra Global Admin.
+
+#### 7. Practice Finance Lead (`FIRM_FINANCE`)
+- **Summary & Titles:** Finance Manager, Billing Coordinator, Practice Accountant.
+- **Daily Responsibilities:** Engagement fee tracking, retainer/advance fee reconciliation, WIP analysis, and firm-wide invoicing.
+- **What They Can Do:** Verify advance payments required for client activation; generate invoices; track project profitability.
+- **What They Cannot Do:** Cannot modify audit working papers or sign off engagement phases.
+- **Decisions Owned:** Commercial clearance and fee verification.
+- **Handoffs & Review:** Confirms paid advance to trigger engagement activation alongside Dual-Key approvals.
+- **Allowed Scopes:** `FIRM_WIDE`, `CLIENT`.
+- **Screens Reached:** Firm Finance, Billing & Invoices, WIP & Retainers.
+- **Access Termination:** Revoked by Administrator upon role change.
+
+---
+
+### Client Portal Roles
+
+#### 8. Client Finance Lead (`CLIENT_PRIMARY`)
+- **Summary & Titles:** Chief Financial Officer (CFO), Finance Director, Controller.
+- **Daily Responsibilities:** Primary firm liaison, engagement terms acceptance, document fulfillment oversight, and deliverable receipt.
+- **What They Can Do:** Execute Client Dual-Key engagement acceptance; assign client contributors to PBC requests; download signed audit deliverables.
+- **What They Cannot Do:** Cannot alter firm workpapers; cannot view internal firm review notes.
+- **Decisions Owned:** Formal acceptance of engagement scope and final deliverable receipt.
+- **Handoffs & Review:** Hands off requested accounting records to Audit Team; receives final signed reports.
+- **Allowed Scopes:** `CLIENT`, `ENGAGEMENT`.
+- **Screens Reached:** Client Portal Dashboard, Dual-Key Approval, PBC Document Request Center, Deliverable Repository.
+- **Access Termination:** Revoked upon client contract termination.
+
+#### 9. Client Contributor (`CLIENT_CONTRIBUTOR`)
+- **Summary & Titles:** Senior Accountant, Bookkeeper, Financial Analyst.
+- **Daily Responsibilities:** Gathering and uploading requested accounting records, bank confirmations, invoices, and schedules.
+- **What They Can Do:** Upload files against open PBC requests; respond to auditor clarifications.
+- **What They Cannot Do:** Cannot sign engagement letters; cannot view billing/commercial data.
+- **Decisions Owned:** Completeness of uploaded source records.
+- **Handoffs & Review:** Submits uploaded evidence to Audit Staff.
+- **Allowed Scopes:** `CLIENT`, `ENGAGEMENT`.
+- **Screens Reached:** Document Upload Center, PBC Tracker.
+- **Access Termination:** Expiry date reached or revoked by Client Finance Lead/Admin.
+
+#### 10. Client Observer (`CLIENT_VIEWER`)
+- **Summary & Titles:** Audit Committee Member, Board Director, Non-Executive Observer.
+- **Daily Responsibilities:** Monitoring overall audit timeline and viewing final published reports.
+- **What They Can Do:** Read-only access to published deliverable summaries and tracking dashboards.
+- **What They Cannot Do:** Cannot upload documents, edit data, or approve deliverables.
+- **Decisions Owned:** None.
+- **Handoffs & Review:** Observes output delivered by Firm.
+- **Allowed Scopes:** `CLIENT`, `ENGAGEMENT`.
+- **Screens Reached:** Published Reports, Engagement Progress Tracker.
+- **Access Termination:** Automatic expiry or revocation by Administrator.
+
+---
+
+## 5. Who Does What Across the Engagement Lifecycle
+
+> **Crucial Rule:** In AuditSphere, the lifecycle phase is **derived automatically from underlying system evidence and cryptographic keys**, not manually toggled by checking off tasks.
+
+```mermaid
+flowchart TD
+    classDef phase fill:#455a64,stroke:#263238,stroke-width:2px,color:#ffffff;
+    classDef staff fill:#005082,stroke:#002b49,stroke-width:2px,color:#ffffff;
+    classDef client fill:#f57c00,stroke:#b65d00,stroke-width:2px,color:#ffffff;
+
+    P1[1. Onboarding Phase]:::phase
+    P1 -.->|Client Key + Partner Key + Advance Fee| P2[2. Planning Phase]:::phase
+    P2 -.->|Approved Audit Strategy Memo| P3[3. Fieldwork Phase]:::phase
+    P3 -.->|All PBCs & Workpapers Prepared| P4[4. Manager Review Phase]:::phase
+    P4 -.->|All Review Notes Cleared| P5[5. Partner Sign-off Phase]:::phase
+    P5 -.->|Partner Sign-off + EQCR Concurrence| P6[6. Report & Delivery Phase]:::phase
+    P6 -.->|Deliverable Acknowledged| P7[7. Archive & Close Phase]:::phase
+```
+*Diagram C: Engagement lifecycle phase gates derived from evidence.*
+
+### Responsibility Matrix Across the 7 Phases
+
+| Lifecycle Phase | Engagement Partner | Engagement Quality Reviewer (EQCR) | Audit Manager | Senior & Staff Auditor | Client Finance Lead | Client Contributor |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **1. Onboarding** | Partner Risk Clearance Key | *Not Involved* | Scope setup assistance | *Not Involved* | Client Acceptance Key | Advance payment processing |
+| **2. Planning** | Approves Audit Strategy | Reviews planned risk model | Drafts Strategy & Materiality | Compiles initial TB & PBC List | Confirms timetable | Receives PBC requests |
+| **3. Fieldwork** | Monitors major escalations | *Not Involved* | Fieldwork oversight | Substantive vouching, testing | Coordinates PBC fulfillment | Uploads requested files |
+| **4. Manager Review** | Interim risk assessment | *Not Involved* | Detailed review, review points | Resolves review points | Responds to queries | Submits missing files |
+| **5. Partner Sign-off** | Final audit opinion sign-off | Formal EQCR Concurrence | Clears final workpaper checks | Final checks | Reviews draft report | *Not Involved* |
+| **6. Report & Delivery**| Releases deliverable | Files review memorandum | Monitors delivery receipt | *Not Involved* | Downloads final signed report | *Not Involved* |
+| **7. Archive & Close** | Engagement lock confirmation| Final archival check | File preparation | *Not Involved* | Read-only access retained | *Not Involved* |
+
+---
+
+## 6. Approvals and Separation of Duties
+
+To protect audit integrity and comply with professional standards (ISQC 1 / ISQM 1 / ISA 220), AuditSphere enforces strict server-side separation-of-duties rules:
+
+1. **Dual-Key Engagement Acceptance (M1-03):** An engagement will not transition into active planning until three conditions are met:
+   - **Key 1:** Client Finance Lead submits digital acceptance of the engagement letter.
+   - **Key 2:** Engagement Partner submits risk, independence, and technical clearance.
+   - **Financial Gate:** Practice Finance confirms receipt of the agreed-upon retainer/advance.
+2. **No Self-Review (Preparer ≠ Reviewer):** The user who prepares a working paper, reconciles a trial balance line, or uploads an audit test cannot approve or sign off on that same item.
+3. **Partner-Only Authorities:** Only an authenticated user holding the `ENGAGEMENT_PARTNER` role can execute final opinion sign-off, risk overrides, and formal release.
+4. **Administrator Separation:** A `ADMINISTRATOR` can manage user accounts and system configuration, but server rules prohibit administrators from signing audit documents, viewing restricted client working papers, or bypassing audit controls.
+5. **Independent Quality Review (M2-02):** The `QUALITY_REVIEWER` must have zero operational role on the engagement team. Server-side logic prevents assigning an individual as both Engagement Partner and EQCR on the same engagement.
+
+```mermaid
+flowchart TD
+    classDef client fill:#f57c00,stroke:#b65d00,stroke-width:2px,color:#ffffff;
+    classDef partner fill:#005082,stroke:#002b49,stroke-width:2px,color:#ffffff;
+    classDef finance fill:#009688,stroke:#005b52,stroke-width:2px,color:#ffffff;
+    classDef system fill:#455a64,stroke:#263238,stroke-width:2px,color:#ffffff;
+
+    K1[Client Acceptance Key<br/>Client Finance Lead]:::client --> GATE{Dual-Key Gate<br/>Server Validation}:::system
+    K2[Partner Clearance Key<br/>Engagement Partner]:::partner --> GATE
+    K3[Retainer Paid Clearance<br/>Firm Finance Lead]:::finance --> GATE
+    GATE -->|All 3 Present| ACTIVE[Engagement Activated<br/>Planning Unlocked]:::system
+    GATE -->|Any Missing| BLOCKED[Engagement Locked<br/>Read-Only Onboarding]:::system
+```
+*Diagram D: Dual-key activation enforcement flow.*
+
+---
+
+## 7. Role vs Capability Matrix
+
+| Module Name | Engagement Partner | Quality Reviewer (EQCR) | Audit Manager | Senior Auditor | Staff Auditor | Firm Admin | Practice Finance | Client Lead | Client Contributor | Client Observer |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Practice & Commercial** | **Full** | None | View | None | None | View | **Full** | None | None | None |
+| **Workflow & Tasks** | **Full** | View | **Full** | **Full** | Assigned | View | None | None | None | None |
+| **Client Accounting & Reporting** | **Full** | View | **Full** | **Full** | Edit | None | None | View | Upload | View |
+| **Audit & Records** | **Full** | Concur | Review | Review | Prepare | None | None | None | None | None |
+| **Firm Finance** | View | None | None | None | None | None | **Full** | None | None | None |
+| **People & Time** | View | None | Edit | Enter | Enter | View | **Full** | None | None | None |
+| **Group Consolidation** | **Full** | View | **Full** | Edit | View | None | None | None | None | None |
+| **Client Portal** | View | None | View | View | View | Admin | None | **Full** | Upload | View |
+| **Administration** | None | None | None | None | None | **Full** | None | None | None | None |
+| **Knowledge Library** | View | View | View | View | View | **Full** | View | None | None | None |
+
+**Legend:**
+- **Full:** Complete create, read, update, delete, and execution authority.
+- **Edit / Prepare:** Ability to input data, upload workpapers, and edit assigned tasks.
+- **Review:** Ability to review work submitted by others and raise review notes; cannot self-approve.
+- **Concur:** EQCR review and formal concurring approval; independent from preparation.
+- **Upload:** Limited to uploading files against designated PBC requests.
+- **View:** Read-only access within authorized scope.
+- **None:** No access to routes, APIs, or data.
+
+---
+
+## 8. Which Role Should This Person Have?
+
+Follow this decision tree to determine the exact role to request for a user:
+
+```mermaid
+flowchart TD
+    classDef decision fill:#ffffff,stroke:#455a64,stroke-width:2px,color:#000000;
+    classDef staff fill:#005082,stroke:#002b49,stroke-width:2px,color:#ffffff;
+    classDef client fill:#f57c00,stroke:#b65d00,stroke-width:2px,color:#ffffff;
+
+    Q1{Is the person internal firm staff or external client?}:::decision
+    Q1 -->|Client Organization| Q2{What is their authority?}:::decision
+    Q1 -->|Firm Staff| Q3{What is their operational duty?}:::decision
+
+    Q2 -->|Executive / Signatory| R_CL[Client Finance Lead]:::client
+    Q2 -->|Accounting Preparer| R_CC[Client Contributor]:::client
+    Q2 -->|Read-Only Observer| R_CO[Client Observer]:::client
+
+    Q3 -->|IT & User Administration| R_ADM[Firm Administrator]:::staff
+    Q3 -->|Practice Billing & WIP| R_FIN[Practice Finance Lead]:::staff
+    Q3 -->|Audit Fieldwork & Review| Q4{What level of review/sign-off?}:::decision
+
+    Q4 -->|Audit Opinion Sign-off| R_EP[Engagement Partner]:::staff
+    Q4 -->|Independent Quality Review| R_EQ[Engagement Quality Reviewer]:::staff
+    Q4 -->|Supervision & Manager Review| R_MGR[Audit Manager]:::staff
+    Q4 -->|Fieldwork In-Charge| R_SNR[Senior Auditor]:::staff
+    Q4 -->|Testing & Vouching| R_STF[Staff Auditor]:::staff
+```
+*Diagram E: Role selection decision tree.*
+
+---
+
+## 9. How to Fill in the Request Form
+
+When submitting access requests, ensure:
+1. **Work Email:** Must match the exact corporate email account the user utilizes to authenticate against Microsoft Entra ID. Personal email domains (`@gmail.com`, `@yahoo.com`) are rejected by server validation.
+2. **Account Type:** Specify either `Staff` or `Client`.
+3. **Scope Specification:** Must specify the exact entity name or engagement code (e.g., `Client: Acme Corp` or `Engagement: ACM-2026-AUD`).
+4. **Expiry Date:** Mandatory for temporary contractor auditors or interim client staff.
+
+### Worked Example
+
+| Full Name | Work Email | Staff or Client | Role Requested | Scope | Start Date | Expiry (if temp) | Approved By | Notes |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| Sarah Jenkins | `sarah.jenkins@example.com` | Staff | `ENGAGEMENT_PARTNER` | Client: Acme Corp | 2026-11-01 | *Permanent* | J. Managing Partner | Engagement Signing Partner |
+| Marcus Vance | `marcus.vance@example.com` | Staff | `QUALITY_REVIEWER` | Engagement: ACM-2026-AUD | 2026-11-01 | 2027-03-31 | J. Managing Partner | Independent EQCR |
+| Elena Rostova | `elena.rostova@example.com` | Staff | `AUDIT_MANAGER` | Engagement: ACM-2026-AUD | 2026-11-01 | *Permanent* | S. Jenkins (Partner) | Fieldwork Supervisor |
+| David Chen | `david.chen@client-example.com`| Client | `CLIENT_PRIMARY` | Client: Acme Corp | 2026-11-01 | *Permanent* | S. Jenkins (Partner) | CFO / Acceptance Signatory |
+
+---
+
+## 10. What Happens After You Reply
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Req as Requestor (Partner / Lead)
+    participant Adm as AuditSphere Administrator
+    participant Entra as Microsoft Entra ID
+    participant App as AuditSphere Server
+    participant Usr as End User
+
+    Req->>Adm: Submits Role Assignment Request Form
+    Adm->>Adm: Verifies Corporate Identity & Approvals
+    alt User exists in Entra Directory
+        Adm->>App: Bind Roster Identity (UPN / Object ID)
+    else External Client User
+        Adm->>App: Generate Secure Invitation Link
+    end
+    Adm->>App: Assign Role + Scope Grant
+    App->>Usr: Sends Invitation Link / Sign-in Welcome
+    Usr->>Entra: Authenticates via Microsoft Work Account
+    Entra->>App: OIDC Token Validated
+    App->>Usr: Grants Access to Authorized Portal & Workspace
+```
+*Diagram F: End-to-end access provisioning sequence.*
+
+---
+
+## 11. Changing or Removing Access
+
+- **Offboarding & Employee Departures:** Notify the Firm Administrator immediately upon an employee or contractor departure. When an identity is disabled in Microsoft Entra ID, AuditSphere session tokens expire immediately.
+- **Role Revocation:** An Administrator can revoke an active role grant in the **Users & Access** module with immediate effect.
+- **Grant Expiry:** When a temporary grant reaches its specified expiry date, access is automatically severed by server authorization guards at midnight UTC.
+- **Audit Logging:** Every grant, role change, scope modification, and revocation is written to an immutable PostgreSQL append-only audit trail recording the timestamp, acting administrator, and target user.
+
+---
+
+## 12. Frequently Asked Questions (FAQ) & Glossary
+
+### FAQ
+
+#### Q1: Can a Firm Administrator sign off on an audit report if the Partner is on leave?
+**No.** AuditSphere enforces strict server-side separation of duties. Administrator access allows managing users and system configurations, but confers zero partner authority.
+
+#### Q2: Can a Senior Auditor approve their own workpapers?
+**No.** The system prevents self-review. All workpapers prepared by a Senior or Staff Auditor must be reviewed and cleared by another user (Manager or Partner).
+
+#### Q3: Why does our engagement dashboard show "Read-Only / Pending Activation"?
+The engagement has not satisfied the Dual-Key activation requirement. Check that (1) the Client Finance Lead has submitted digital acceptance, (2) the Engagement Partner has submitted risk clearance, and (3) Practice Finance has marked the advance retainer as received.
+
+#### Q4: What happens if our organization disables Microsoft Graph B2B Guest Invitations?
+If automated guest invitations are blocked by tenant policy (`BLOCKED_EXTERNAL`), the Administrator uses the manual "Copy Invitation Link" workflow in the Users & Access screen to send the onboarding token directly to the user.
+
+#### Q5: Can an auditor work on two different engagements with different roles?
+**Yes.** Roles are granted per scope. For example, a professional may act as an `AUDIT_MANAGER` on Engagement A, and as an independent `QUALITY_REVIEWER` on Engagement B.
+
+#### Q6: Can a client contributor see billing and fee details?
+**No.** Client Contributors are restricted exclusively to uploading evidence and viewing open PBC requests. Commercial details are visible only to the Client Finance Lead and Practice Finance.
+
+#### Q7: What Microsoft Entra credentials do users log in with?
+Users log in using their normal corporate Microsoft work email and password (with your organization's existing Multi-Factor Authentication). AuditSphere never stores or processes user passwords.
+
+#### Q8: How long does an invitation link remain valid?
+Invitation links remain valid for 7 days (`TO CONFIRM`). If a link expires, the Administrator must reissue an invitation from Users & Access.
+
+### Glossary
+- **Scope:** The operational boundary (Firm-Wide, Group, Client, or Engagement) within which a role grant is valid.
+- **Grant:** An active, authenticated authorization binding a user identity, a role, and a scope together.
+- **Engagement:** A distinct project instance (such as a 2026 Financial Statement Audit) with its own team, workpapers, and deliverables.
+- **PBC (Provided by Client):** Audit evidence items requested from the client's accounting team.
+- **TB / GL:** Trial Balance and General Ledger extracts used for substantive testing.
+- **SRM (Strategy & Risk Model):** The foundational planning module where materiality and audit risks are recorded.
+- **Dual-Key Acceptance:** The mandatory prerequisite gate requiring both client acceptance and partner technical clearance before active audit work can begin.
+- **EQCR:** Engagement Quality Control Reviewer; an independent partner who evaluates significant judgments.
+
+---
+
+## 13. Appendices
+
+### Appendix A: Users & Access Walkthrough (Administrator Only)
+
+> *This section is reserved for AuditSphere Administrators operating in `AuditSphereOps.Ui`.*
+
+#### 1. Navigating to Access Management
+1. Log in to the Staff Portal using an account with `ADMINISTRATOR` authority.
+2. Select **Administration** from the left-hand navigation menu.
+3. Click **Users & Access** (`/admin/access`).
+
+#### 2. Search Local Users & Roster Binding
+- Use the **Search Local Users** bar to locate existing user profiles by name, email, or Entra User Principal Name (UPN).
+- To bind a new corporate employee whose details have been loaded into the roster:
+  1. Click **Bind a Roster Identity**.
+  2. Input the corporate email address.
+  3. Enter the Microsoft Entra Object ID (UUID) if direct directory integration is enabled.
+  4. Click **Confirm Binding**.
+
+#### 3. Assign Role and Scope Dialog
+1. Locate the verified user record and click **Assign Role & Scope**.
+2. **Account Type:** Select `Staff` or `Client`.
+3. **Role:** Select the verified code identifier from the dropdown (e.g., `AUDIT_MANAGER`).
+4. **Scope Level:** Choose `FIRM_WIDE`, `GROUP`, `CLIENT`, or `ENGAGEMENT`.
+5. **Target Identifier:** Select the specific Client or Engagement from the search selector.
+6. **Grant Duration:** Choose `Permanent` or specify an `Expiry Date`.
+7. Click **Save Grant**. The server will generate an audit event and activate the permissions immediately.
+
+#### 4. Copy Invitation Link & External Invitations
+- When onboarding external client users where Microsoft Graph automated guest provisioning is disabled (`GUEST_INVITATION` disabled):
+  1. Click **Generate External Invitation**.
+  2. Enter the client contact's corporate email and full name.
+  3. Assign the initial scope (`Client: <Name>`).
+  4. Click **Copy Invitation Link**.
+  5. Distribute this single-use link to the client via secure communication.
+
+---
+
+### Appendix B: Evidence Map & Traceability
+
+This appendix documents the codebase source paths and symbols establishing the authoritative truth for each role and privilege.
+
+| Role Display Label | Code Identifier | Code Implementation File Reference | Enforced Server Guard / Policy |
+| :--- | :--- | :--- | :--- |
+| **Engagement Partner** | `ENGAGEMENT_PARTNER` | `src/AuditSphereOps.Domain/Identity/Roles.cs`<br/>`src/AuditSphereOps.Ui/src/app/features/admin/roles.ts` | `RequirePartnerAuthorityPolicy`<br/>`DualKeyPartnerSignOffCommand` |
+| **Engagement Quality Reviewer** | `QUALITY_REVIEWER` | `src/AuditSphereOps.Domain/Identity/Roles.cs`<br/>`docs/requirements/auditsphere-accounting-module-requirements-current.md#M2-02` | `RequireIndependentQualityReviewer`<br/>`EnsurePreparerNotReviewerRule` |
+| **Audit Manager** | `AUDIT_MANAGER` | `src/AuditSphereOps.Domain/Identity/Roles.cs`<br/>`src/AuditSphereOps.Application/Workflows/WorkpaperReviewCommand.cs` | `RequireManagerOrPartnerGuard` |
+| **Senior Auditor** | `SENIOR_AUDITOR` | `src/AuditSphereOps.Domain/Identity/Roles.cs`<br/>`src/AuditSphereOps.Ui/src/app/features/admin/access-contracts.ts` | `FieldworkLeadPermission` |
+| **Staff Auditor** | `STAFF_AUDITOR` | `src/AuditSphereOps.Domain/Identity/Roles.cs`<br/>`src/AuditSphereOps.Application/Workpapers/CreateWorkpaperCommand.cs` | `EnsurePreparerNotReviewerRule` |
+| **Firm Administrator** | `ADMINISTRATOR` | `src/AuditSphereOps.Domain/Identity/Roles.cs`<br/>`src/AuditSphereOps.Ui/src/app/features/admin/access.ts` | `RequireAdminRolePolicy` (Server denies audit sign-off) |
+| **Practice Finance Lead** | `FIRM_FINANCE` | `src/AuditSphereOps.Domain/Identity/Roles.cs`<br/>`src/AuditSphereOps.Application/Commercial/AdvancePaymentHandler.cs` | `RequireFinanceRolePolicy` |
+| **Client Finance Lead** | `CLIENT_PRIMARY` | `src/AuditSphereOps.Domain/Identity/Roles.cs`<br/>`docs/requirements/auditsphere-accounting-module-requirements-current.md#M1-03` | `DualKeyClientAcceptanceCommand` |
+| **Client Contributor** | `CLIENT_CONTRIBUTOR` | `src/AuditSphereOps.Domain/Identity/Roles.cs`<br/>`src/AuditSphereOps.Application/Pbc/UploadPbcEvidenceCommand.cs` | `ClientPbcUploadScopeGuard` |
+| **Client Observer** | `CLIENT_VIEWER` | `src/AuditSphereOps.Domain/Identity/Roles.cs`<br/>`src/AuditSphereOps.Ui/src/app/routes/app.routes.ts` | `ClientReadOnlyScopeGuard` |
+
+#### Open Questions & Items Marked `TO CONFIRM`
+1. `TO CONFIRM-01`: Exact token validity period for client onboarding invitation links (default documented as 7 calendar days).
+2. `TO CONFIRM-02`: Entra ID background group synchronization frequency when `GROUP_MEMBERSHIP` automated sync is enabled.
+3. `TO CONFIRM-03`: Allowed character constraints and domain whitelist rules for external client email domains in multi-tenant environments.
+```
+
+---
+
+# Deliverable D2: Self-Contained Single-File HTML Version
+
+```html
+<!-- File: docs/user-guides/auditsphere-user-guide-roles-and-access-current.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AuditSphere Roles & Access Guide</title>
+  <style>
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8fafc;
+      --bg-card: #ffffff;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --border-color: #e2e8f0;
+      --primary: #005082;
+      --primary-light: #e6f0f7;
+      --client-accent: #f57c00;
+      --accent: #009688;
+      --warning-bg: #fffbeb;
+      --warning-border: #fef3c7;
+      --warning-text: #92400e;
+      --code-bg: #f1f5f9;
+      --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+      --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #0f172a;
+        --bg-secondary: #1e293b;
+        --bg-card: #1e293b;
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --border-color: #334155;
+        --primary: #38bdf8;
+        --primary-light: #082f49;
+        --client-accent: #fb923c;
+        --accent: #2dd4bf;
+        --warning-bg: #451a03;
+        --warning-border: #78350f;
+        --warning-text: #fde68a;
+        --code-bg: #0f172a;
+        --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3);
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-main);
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      font-size: 16px;
+      display: flex;
+    }
+
+    /* Layout */
+    .toc-sidebar {
+      width: 280px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      padding: 1.5rem 1rem;
+      flex-shrink: 0;
+    }
+    .toc-sidebar h3 { font-size: 1.1rem; margin-bottom: 1rem; color: var(--primary); }
+    .toc-sidebar ul { list-style: none; }
+    .toc-sidebar li { margin-bottom: 0.5rem; }
+    .toc-sidebar a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      display: block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+    }
+    .toc-sidebar a:hover {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 2rem 3rem;
+      max-width: 1000px;
+    }
+
+    h1, h2, h3, h4 { color: var(--text-primary); font-weight: 700; margin: 1.5rem 0 0.75rem 0; }
+    h1 { font-size: 2.2rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem; }
+    h2 { font-size: 1.6rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.4rem; margin-top: 2rem; }
+    h3 { font-size: 1.25rem; }
+    p { margin-bottom: 1rem; color: var(--text-secondary); }
+
+    .callout {
+      background: var(--warning-bg);
+      border-left: 4px solid var(--client-accent);
+      padding: 1rem 1.25rem;
+      border-radius: 4px;
+      margin: 1.5rem 0;
+      color: var(--warning-text);
+    }
+    .callout strong { display: block; margin-bottom: 0.25rem; }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      font-size: 0.95rem;
+    }
+    th, td {
+      border: 1px solid var(--border-color);
+      padding: 0.75rem 1rem;
+      text-align: left;
+    }
+    th {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    /* Collapsible Role Cards */
+    details.role-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      margin-bottom: 1rem;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    details.role-card summary {
+      padding: 1rem 1.25rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-secondary);
+      user-select: none;
+    }
+    details.role-card summary:hover {
+      background: var(--primary-light);
+    }
+    .role-badge {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      font-weight: bold;
+    }
+    .badge-staff { background: #005082; color: #fff; }
+    .badge-client { background: #f57c00; color: #fff; }
+    .card-body { padding: 1.25rem; }
+    .card-body ul { margin-left: 1.5rem; margin-bottom: 1rem; }
+    .card-body li { margin-bottom: 0.35rem; color: var(--text-secondary); }
+
+    /* Diagrams (Embedded SVG) */
+    .diagram-container {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      text-align: center;
+    }
+    .diagram-container svg { max-width: 100%; height: auto; }
+    .diagram-caption {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-top: 0.5rem;
+      font-style: italic;
+    }
+
+    @media print {
+      body { display: block; background: #fff; color: #000; }
+      .toc-sidebar { display: none; }
+      .main-content { padding: 0; max-width: 100%; }
+      details.role-card { break-inside: avoid; border: 1px solid #ccc; }
+      details.role-card[open] summary ~ * { display: block; }
+      .diagram-container { break-inside: avoid; border: 1px solid #ccc; }
+    }
+
+    @media (max-width: 768px) {
+      body { flex-direction: column; }
+      .toc-sidebar { width: 100%; height: auto; position: relative; }
+      .main-content { padding: 1.5rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="toc-sidebar" aria-label="Table of Contents">
+    <h3>AuditSphere Guide</h3>
+    <ul>
+      <li><a href="#action">1. What We Need From You</a></li>
+      <li><a href="#overview">2. 60-Second Overview</a></li>
+      <li><a href="#scope">3. Role Plus Scope</a></li>
+      <li><a href="#cards">4. Role Cards</a></li>
+      <li><a href="#lifecycle">5. Engagement Lifecycle</a></li>
+      <li><a href="#sod">6. Approvals & SoD</a></li>
+      <li><a href="#matrix">7. Role vs Capability Matrix</a></li>
+      <li><a href="#tree">8. Decision Tree</a></li>
+      <li><a href="#request">9. Submitting Requests</a></li>
+      <li><a href="#workflow">10. Onboarding Process</a></li>
+      <li><a href="#offboarding">11. Changing/Removing Access</a></li>
+      <li><a href="#faq">12. FAQ & Glossary</a></li>
+      <li><a href="#appendix-a">Appendix A: Admin Walkthrough</a></li>
+      <li><a href="#appendix-b">Appendix B: Evidence Map</a></li>
+    </ul>
+  </nav>
+
+  <main class="main-content">
+    <h1>AuditSphere Roles & Access Guide</h1>
+    <p>A concise operational guide for Firm Partners, Practice Managers, Client Finance Leads, and Administrators.</p>
+
+    <section id="action" class="callout" role="alert">
+      <strong>Action Required: Submit Role Assignments</strong>
+      Please complete the Role Assignment Request template and email it to <code>auditsphere-admin@example.com</code> using your organization's official Microsoft work email addresses.
+    </section>
+
+    <section id="overview">
+      <h2>2. 60-Second Overview</h2>
+      <p>AuditSphere provides strict portal isolation: the <strong>Staff Portal</strong> for the independent accounting firm and the <strong>Client Portal</strong> for client finance personnel. Sign-in is verified through Microsoft Entra ID.</p>
+      
+      <div class="diagram-container">
+        <svg viewBox="0 0 400 240" width="400" height="240" aria-label="Diagram A: High-level sign-in and authorization flow">
+          <rect x="100" y="10" width="200" height="40" rx="6" fill="#455a64"/>
+          <text x="200" y="35" fill="#ffffff" font-size="12" text-anchor="middle" font-weight="bold">Microsoft Entra ID Sign-In</text>
+          
+          <line x1="200" y1="50" x2="200" y2="80" stroke="#455a64" stroke-width="2"/>
+          
+          <rect x="110" y="80" width="180" height="40" rx="6" fill="#005082"/>
+          <text x="200" y="105" fill="#ffffff" font-size="12" text-anchor="middle" font-weight="bold">Server Role & Scope Check</text>
+          
+          <line x1="160" y1="120" x2="100" y2="160" stroke="#455a64" stroke-width="2"/>
+          <line x1="240" y1="120" x2="300" y2="160" stroke="#455a64" stroke-width="2"/>
+          
+          <rect x="20" y="160" width="160" height="50" rx="6" fill="#005082"/>
+          <text x="100" y="185" fill="#ffffff" font-size="12" text-anchor="middle" font-weight="bold">Staff Portal</text>
+          <text x="100" y="200" fill="#ffffff" font-size="10" text-anchor="middle">Firm Personnel</text>
+          
+          <rect x="220" y="160" width="160" height="50" rx="6" fill="#f57c00"/>
+          <text x="300" y="185" fill="#ffffff" font-size="12" text-anchor="middle" font-weight="bold">Client Portal</text>
+          <text x="300" y="200" fill="#ffffff" font-size="10" text-anchor="middle">Client Contacts & PBC</text>
+        </svg>
+        <div class="diagram-caption">Diagram A: Overview of portal access separation.</div>
+      </div>
+    </section>
+
+    <section id="scope">
+      <h2>3. Role Plus Scope</h2>
+      <p>Permissions are composed of <strong>Role</strong> (what actions you can perform) and <strong>Scope</strong> (where you are permitted to act).</p>
+      
+      <div class="diagram-container">
+        <svg viewBox="0 0 400 220" width="400" height="220" aria-label="Diagram B: Scope hierarchy">
+          <rect x="50" y="10" width="300" height="40" rx="6" fill="#005082"/>
+          <text x="200" y="35" fill="#ffffff" font-size="12" text-anchor="middle" font-weight="bold">Firm-Wide Scope (Firm Admin, Partner)</text>
+          
+          <line x1="200" y1="50" x2="200" y2="80" stroke="#455a64" stroke-width="2"/>
+          
+          <rect x="80" y="80" width="240" height="40" rx="6" fill="#009688"/>
+          <text x="200" y="105" fill="#ffffff" font-size="12" text-anchor="middle" font-weight="bold">Client Scope (All Engagements for Entity)</text>
+          
+          <line x1="200" y1="120" x2="200" y2="150" stroke="#455a64" stroke-width="2"/>
+          
+          <rect x="110" y="150" width="180" height="40" rx="6" fill="#7b1fa2"/>
+          <text x="200" y="175" fill="#ffffff" font-size="12" text-anchor="middle" font-weight="bold">Engagement Scope (Single Project)</text>
+        </svg>
+        <div class="diagram-caption">Diagram B: The three primary operational scope boundaries.</div>
+      </div>
+    </section>
+
+    <section id="cards">
+      <h2>4. Role Cards</h2>
+      
+      <details class="role-card" open>
+        <summary>
+          <span>Engagement Partner</span>
+          <span class="role-badge badge-staff">Staff</span>
+        </summary>
+        <div class="card-body">
+          <p><strong>Responsibilities:</strong> Final engagement oversight, risk evaluation, and opinion sign-off.</p>
+          <ul>
+            <li><strong>Can do:</strong> Dual-Key partner clearance, approve audit plans, sign audit opinion.</li>
+            <li><strong>Cannot do:</strong> Cannot act as EQCR on the same engagement; cannot bypass client acceptance key.</li>
+            <li><strong>Decisions owned:</strong> Final audit report release.</li>
+            <li><strong>Screens:</strong> Strategy & Risk, Partner Sign-off, Financial Statements.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="role-card">
+        <summary>
+          <span>Engagement Quality Reviewer (EQCR)</span>
+          <span class="role-badge badge-staff">Staff</span>
+        </summary>
+        <div class="card-body">
+          <p><strong>Responsibilities:</strong> Independent objective evaluation of significant judgments (M2-02).</p>
+          <ul>
+            <li><strong>Can do:</strong> Review all workpapers and significant judgments; provide concurring approval.</li>
+            <li><strong>Cannot do:</strong> Cannot prepare workpapers; cannot serve on the operational engagement team.</li>
+            <li><strong>Decisions owned:</strong> Formal concurring review clearance.</li>
+            <li><strong>Screens:</strong> EQCR Review Console, Significant Judgments Memo.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="role-card">
+        <summary>
+          <span>Audit Manager</span>
+          <span class="role-badge badge-staff">Staff</span>
+        </summary>
+        <div class="card-body">
+          <p><strong>Responsibilities:</strong> Operational fieldwork supervision, timeline management, and workpaper review.</p>
+          <ul>
+            <li><strong>Can do:</strong> Allocate procedures, issue PBC requests, review and approve audit sections.</li>
+            <li><strong>Cannot do:</strong> Cannot sign the final audit opinion or execute partner clearance.</li>
+            <li><strong>Decisions owned:</strong> Fieldwork completeness and review-note clearance.</li>
+            <li><strong>Screens:</strong> Workflow, Workpaper Review, PBC Tracker.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="role-card">
+        <summary>
+          <span>Senior Auditor</span>
+          <span class="role-badge badge-staff">Staff</span>
+        </summary>
+        <div class="card-body">
+          <p><strong>Responsibilities:</strong> Complex section testing, in-charge fieldwork execution, junior auditor guidance.</p>
+          <ul>
+            <li><strong>Can do:</strong> Prepare complex testing papers, review staff work, draft PBC lists.</li>
+            <li><strong>Cannot do:</strong> Cannot perform final sign-off or close manager review points.</li>
+            <li><strong>Decisions owned:</strong> Fieldwork section accuracy.</li>
+            <li><strong>Screens:</strong> Workpapers, Substantive Testing, Evidence Upload.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="role-card">
+        <summary>
+          <span>Staff Auditor</span>
+          <span class="role-badge badge-staff">Staff</span>
+        </summary>
+        <div class="card-body">
+          <p><strong>Responsibilities:</strong> Substantive vouching, PBC reconciliation, testing documentation.</p>
+          <ul>
+            <li><strong>Can do:</strong> Prepare workpapers, verify uploaded PBC files, record audit observations.</li>
+            <li><strong>Cannot do:</strong> No self-review permitted; cannot approve own work.</li>
+            <li><strong>Decisions owned:</strong> Accurate evidence documentation.</li>
+            <li><strong>Screens:</strong> My Tasks, Working Papers, PBC List.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="role-card">
+        <summary>
+          <span>Firm Administrator</span>
+          <span class="role-badge badge-staff">Staff</span>
+        </summary>
+        <div class="card-body">
+          <p><strong>Responsibilities:</strong> User management, roster identity binding, Microsoft Entra sync.</p>
+          <ul>
+            <li><strong>Can do:</strong> Assign roles and scopes, generate invitation links, manage directories.</li>
+            <li><strong>Cannot do:</strong> Administrator access confers NO partner authority; cannot sign audit deliverables.</li>
+            <li><strong>Decisions owned:</strong> Identity provisioning.</li>
+            <li><strong>Screens:</strong> Users & Access, Roster Management, Directory Sync.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="role-card">
+        <summary>
+          <span>Practice Finance Lead</span>
+          <span class="role-badge badge-staff">Staff</span>
+        </summary>
+        <div class="card-body">
+          <p><strong>Responsibilities:</strong> Commercial terms, engagement billing, advance fee verification.</p>
+          <ul>
+            <li><strong>Can do:</strong> Verify advance payment gate, issue client invoices, review WIP.</li>
+            <li><strong>Cannot do:</strong> Cannot edit audit workpapers or sign deliverables.</li>
+            <li><strong>Decisions owned:</strong> Commercial fee verification.</li>
+            <li><strong>Screens:</strong> Firm Finance, WIP & Billing, Invoices.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="role-card">
+        <summary>
+          <span>Client Finance Lead</span>
+          <span class="role-badge badge-client">Client</span>
+        </summary>
+        <div class="card-body">
+          <p><strong>Responsibilities:</strong> Primary client liaison, engagement terms acceptance, deliverable receipt.</p>
+          <ul>
+            <li><strong>Can do:</strong> Execute Client Dual-Key acceptance, assign PBC items, receive final signed deliverables.</li>
+            <li><strong>Cannot do:</strong> Cannot view internal firm review notes or workpapers.</li>
+            <li><strong>Decisions owned:</strong> Engagement terms acceptance.</li>
+            <li><strong>Screens:</strong> Client Portal, Dual-Key Approval, PBC Center, Reports.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="role-card">
+        <summary>
+          <span>Client Contributor</span>
+          <span class="role-badge badge-client">Client</span>
+        </summary>
+        <div class="card-body">
+          <p><strong>Responsibilities:</strong> Uploading requested accounting records and schedules.</p>
+          <ul>
+            <li><strong>Can do:</strong> Upload files against open PBC requests, reply to auditor queries.</li>
+            <li><strong>Cannot do:</strong> Cannot sign engagement terms or view firm billing data.</li>
+            <li><strong>Decisions owned:</strong> Accuracy of uploaded source files.</li>
+            <li><strong>Screens:</strong> Document Upload Center, PBC Tracker.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="role-card">
+        <summary>
+          <span>Client Observer</span>
+          <span class="role-badge badge-client">Client</span>
+        </summary>
+        <div class="card-body">
+          <p><strong>Responsibilities:</strong> Governance and oversight monitoring.</p>
+          <ul>
+            <li><strong>Can do:</strong> Read-only access to published deliverable summaries and timelines.</li>
+            <li><strong>Cannot do:</strong> Cannot upload files, modify records, or approve items.</li>
+            <li><strong>Decisions owned:</strong> None.</li>
+            <li><strong>Screens:</strong> Published Deliverables, Engagement Status.</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+
+    <section id="lifecycle">
+      <h2>5. Engagement Lifecycle</h2>
+      <p>Lifecycle state is derived directly from validated server evidence, not manual checkboxes.</p>
+      
+      <div class="diagram-container">
+        <svg viewBox="0 0 360 300" width="360" height="300" aria-label="Diagram C: Engagement lifecycle flow">
+          <rect x="80" y="10" width="200" height="30" rx="4" fill="#455a64"/>
+          <text x="180" y="30" fill="#fff" font-size="11" text-anchor="middle" font-weight="bold">1. Onboarding (Dual-Key Gate)</text>
+          
+          <line x1="180" y1="40" x2="180" y2="55" stroke="#455a64" stroke-width="2"/>
+          <rect x="80" y="55" width="200" height="30" rx="4" fill="#455a64"/>
+          <text x="180" y="75" fill="#fff" font-size="11" text-anchor="middle" font-weight="bold">2. Planning (Strategy & Risk)</text>
+          
+          <line x1="180" y1="85" x2="180" y2="100" stroke="#455a64" stroke-width="2"/>
+          <rect x="80" y="100" width="200" height="30" rx="4" fill="#009688"/>
+          <text x="180" y="120" fill="#fff" font-size="11" text-anchor="middle" font-weight="bold">3. Fieldwork & Testing</text>
+          
+          <line x1="180" y1="130" x2="180" y2="145" stroke="#455a64" stroke-width="2"/>
+          <rect x="80" y="145" width="200" height="30" rx="4" fill="#007acc"/>
+          <text x="180" y="165" fill="#fff" font-size="11" text-anchor="middle" font-weight="bold">4. Manager Review</text>
+          
+          <line x1="180" y1="175" x2="180" y2="190" stroke="#455a64" stroke-width="2"/>
+          <rect x="80" y="190" width="200" height="30" rx="4" fill="#005082"/>
+          <text x="180" y="210" fill="#fff" font-size="11" text-anchor="middle" font-weight="bold">5. Partner Sign-off & EQCR</text>
+          
+          <line x1="180" y1="220" x2="180" y2="235" stroke="#455a64" stroke-width="2"/>
+          <rect x="80" y="235" width="200" height="30" rx="4" fill="#455a64"/>
+          <text x="180" y="255" fill="#fff" font-size="11" text-anchor="middle" font-weight="bold">6. Report Delivery & Release</text>
+          
+          <line x1="180" y1="265" x2="180" y2="275" stroke="#455a64" stroke-width="2"/>
+          <rect x="80" y="275" width="200" height="20" rx="4" fill="#263238"/>
+          <text x="180" y="289" fill="#fff" font-size="9" text-anchor="middle">7. Lock & Archive</text>
+        </svg>
+        <div class="diagram-caption">Diagram C: Seven evidence-derived lifecycle phases.</div>
+      </div>
+    </section>
+
+    <section id="sod">
+      <h2>6. Approvals and Separation of Duties</h2>
+      <p>AuditSphere enforces strict server-side validation to satisfy professional independence standards:</p>
+      <ul>
+        <li><strong>Dual-Key Activation:</strong> Unlocked only upon Client Acceptance Key + Partner Clearance Key + Confirmed Advance Fee.</li>
+        <li><strong>No Self-Review:</strong> Preparers cannot approve their own working papers or reconciliations.</li>
+        <li><strong>Partner Authority Protection:</strong> System Administrators cannot sign audit reports or clear technical risks.</li>
+      </ul>
+      
+      <div class="diagram-container">
+        <svg viewBox="0 0 380 180" width="380" height="180" aria-label="Diagram D: Dual-key activation flow">
+          <rect x="20" y="20" width="100" height="40" rx="4" fill="#f57c00"/>
+          <text x="70" y="45" fill="#fff" font-size="10" text-anchor="middle" font-weight="bold">Client Key</text>
+          
+          <rect x="140" y="20" width="100" height="40" rx="4" fill="#005082"/>
+          <text x="190" y="45" fill="#fff" font-size="10" text-anchor="middle" font-weight="bold">Partner Key</text>
+          
+          <rect x="260" y="20" width="100" height="40" rx="4" fill="#009688"/>
+          <text x="310" y="45" fill="#fff" font-size="10" text-anchor="middle" font-weight="bold">Fee Received</text>
+          
+          <line x1="70" y1="60" x2="190" y2="100" stroke="#455a64" stroke-width="2"/>
+          <line x1="190" y1="60" x2="190" y2="100" stroke="#455a64" stroke-width="2"/>
+          <line x1="310" y1="60" x2="190" y2="100" stroke="#455a64" stroke-width="2"/>
+          
+          <rect x="110" y="100" width="160" height="40" rx="6" fill="#455a64"/>
+          <text x="190" y="125" fill="#fff" font-size="11" text-anchor="middle" font-weight="bold">Dual-Key Server Gate</text>
+          
+          <line x1="190" y1="140" x2="190" y2="155" stroke="#455a64" stroke-width="2"/>
+          <text x="190" y="170" fill="#009688" font-size="11" text-anchor="middle" font-weight="bold">✓ Planning Phase Unlocked</text>
+        </svg>
+        <div class="diagram-caption">Diagram D: Dual-key activation server validation.</div>
+      </div>
+    </section>
+
+    <section id="matrix">
+      <h2>7. Role vs Capability Matrix</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Module Name</th>
+            <th>Partner</th>
+            <th>EQCR</th>
+            <th>Manager</th>
+            <th>Staff</th>
+            <th>Admin</th>
+            <th>Client Lead</th>
+            <th>Client Staff</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Practice & Commercial</td>
+            <td><strong>Full</strong></td>
+            <td>None</td>
+            <td>View</td>
+            <td>None</td>
+            <td>View</td>
+            <td>None</td>
+            <td>None</td>
+          </tr>
+          <tr>
+            <td>Workflow & Tasks</td>
+            <td><strong>Full</strong></td>
+            <td>View</td>
+            <td><strong>Full</strong></td>
+            <td>Assigned</td>
+            <td>View</td>
+            <td>None</td>
+            <td>None</td>
+          </tr>
+          <tr>
+            <td>Accounting & Reporting</td>
+            <td><strong>Full</strong></td>
+            <td>View</td>
+            <td><strong>Full</strong></td>
+            <td>Edit</td>
+            <td>None</td>
+            <td>View</td>
+            <td>Upload</td>
+          </tr>
+          <tr>
+            <td>Audit & Records</td>
+            <td><strong>Full</strong></td>
+            <td>Concur</td>
+            <td>Review</td>
+            <td>Prepare</td>
+            <td>None</td>
+            <td>None</td>
+            <td>None</td>
+          </tr>
+          <tr>
+            <td>Client Portal</td>
+            <td>View</td>
+            <td>None</td>
+            <td>View</td>
+            <td>View</td>
+            <td>Admin</td>
+            <td><strong>Full</strong></td>
+            <td>Upload</td>
+          </tr>
+          <tr>
+            <td>Administration</td>
+            <td>None</td>
+            <td>None</td>
+            <td>None</td>
+            <td>None</td>
+            <td><strong>Full</strong></td>
+            <td>None</td>
+            <td>None</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="tree">
+      <h2>8. Which Role Should This Person Have?</h2>
+      
+      <div class="diagram-container">
+        <svg viewBox="0 0 380 240" width="380" height="240" aria-label="Diagram E: Role decision tree">
+          <rect x="90" y="10" width="200" height="35" rx="4" fill="#455a64"/>
+          <text x="190" y="32" fill="#fff" font-size="11" text-anchor="middle" font-weight="bold">Internal Staff or Client Org?</text>
+          
+          <line x1="140" y1="45" x2="90" y2="80" stroke="#455a64" stroke-width="2"/>
+          <line x1="240" y1="45" x2="290" y2="80" stroke="#455a64" stroke-width="2"/>
+          
+          <rect x="20" y="80" width="140" height="35" rx="4" fill="#005082"/>
+          <text x="90" y="102" fill="#fff" font-size="10" text-anchor="middle" font-weight="bold">Audit Firm Staff</text>
+          
+          <rect x="220" y="80" width="140" height="35" rx="4" fill="#f57c00"/>
+          <text x="290" y="102" fill="#fff" font-size="10" text-anchor="middle" font-weight="bold">Client Organization</text>
+          
+          <line x1="90" y1="115" x2="90" y2="140" stroke="#455a64" stroke-width="2"/>
+          <rect x="10" y="140" width="160" height="40" rx="4" fill="#005082"/>
+          <text x="90" y="157" fill="#fff" font-size="9" text-anchor="middle">Fieldwork = Staff/Senior</text>
+          <text x="90" y="171" fill="#fff" font-size="9" text-anchor="middle">Sign-off = Partner / EQCR</text>
+          
+          <line x1="290" y1="115" x2="290" y2="140" stroke="#455a64" stroke-width="2"/>
+          <rect x="210" y="140" width="160" height="40" rx="4" fill="#f57c00"/>
+          <text x="290" y="157" fill="#fff" font-size="9" text-anchor="middle">Signatory/CFO = Client Lead</text>
+          <text x="290" y="171" fill="#fff" font-size="9" text-anchor="middle">Accountant = Contributor</text>
+        </svg>
+        <div class="diagram-caption">Diagram E: Role decision flow.</div>
+      </div>
+    </section>
+
+    <section id="request">
+      <h2>9. Submitting Requests</h2>
+      <p>Fill out the Role Assignment Request Template (CSV or table) with corporate work email addresses and email it to <code>auditsphere-admin@example.com</code>.</p>
+    </section>
+
+    <section id="workflow">
+      <h2>10. What Happens After You Reply</h2>
+      <p>The Administrator verifies corporate identity in Microsoft Entra, creates the scoped grant, and issues the portal welcome link.</p>
+      
+      <div class="diagram-container">
+        <svg viewBox="0 0 380 200" width="380" height="200" aria-label="Diagram F: Access setup sequence">
+          <line x1="60" y1="30" x2="60" y2="180" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="4"/>
+          <line x1="190" y1="30" x2="190" y2="180" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="4"/>
+          <line x1="320" y1="30" x2="320" y2="180" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="4"/>
+          
+          <rect x="20" y="10" width="80" height="25" rx="3" fill="#455a64"/>
+          <text x="60" y="27" fill="#fff" font-size="10" text-anchor="middle">Requestor</text>
+          
+          <rect x="150" y="10" width="80" height="25" rx="3" fill="#005082"/>
+          <text x="190" y="27" fill="#fff" font-size="10" text-anchor="middle">Admin</text>
+          
+          <rect x="280" y="10" width="80" height="25" rx="3" fill="#009688"/>
+          <text x="320" y="27" fill="#fff" font-size="10" text-anchor="middle">End User</text>
+          
+          <line x1="60" y1="60" x2="190" y2="60" stroke="#005082" stroke-width="2"/>
+          <text x="125" y="55" font-size="9" text-anchor="middle" fill="var(--text-secondary)">1. Send Form</text>
+          
+          <line x1="190" y1="95" x2="190" y2="115" stroke="#005082" stroke-width="2"/>
+          <text x="190" y="110" font-size="9" text-anchor="middle" fill="var(--text-secondary)">2. Bind Entra ID & Scope</text>
+          
+          <line x1="190" y1="140" x2="320" y2="140" stroke="#009688" stroke-width="2"/>
+          <text x="255" y="135" font-size="9" text-anchor="middle" fill="var(--text-secondary)">3. Invitation / Sign-in Link</text>
+          
+          <line x1="320" y1="165" x2="190" y2="165" stroke="#009688" stroke-width="2" stroke-dasharray="2"/>
+          <text x="255" y="160" font-size="9" text-anchor="middle" fill="var(--text-secondary)">4. Authenticated via Entra</text>
+        </svg>
+        <div class="diagram-caption">Diagram F: End-to-end access setup sequence.</div>
+      </div>
+    </section>
+
+    <section id="offboarding">
+      <h2>11. Changing or Removing Access</h2>
+      <p>When personnel leave an organization or roll off an engagement, notify the Administrator immediately. Session tokens invalidate upon account disabling in Microsoft Entra ID. Temporary grants expire automatically on their end date.</p>
+    </section>
+
+    <section id="faq">
+      <h2>12. FAQ & Glossary</h2>
+      <p><strong>Can an Administrator sign an audit report?</strong><br>No. System authorization rules strictly prevent administrators from executing partner sign-offs.</p>
+      <p><strong>What is Dual-Key Acceptance?</strong><br>A mandatory control requiring both the client's formal acceptance and the engagement partner's risk clearance before audit fieldwork can begin.</p>
+    </section>
+
+    <section id="appendix-a">
+      <h2>Appendix A: Administrator Walkthrough</h2>
+      <p>Administrators configure grants in <code>/admin/access</code> using the <strong>Assign Role and Scope</strong> modal. When tenant guest provisioning is disabled, use <strong>Copy Invitation Link</strong> to onboard external client users.</p>
+    </section>
+
+    <section id="appendix-b">
+      <h2>Appendix B: Evidence Map</h2>
+      <p>All role definitions and access guards trace to domain declarations in <code>AuditSphereOps.Domain.Identity.Roles</code> and server-side authorization policies.</p>
+    </section>
+  </main>
+</body>
+</html>
+```
+
+---
+
+# Deliverable D4: Role Assignment Request Template
+
+### Table Template (for copying into email or documents)
+
+| Full Name | Work Email (Microsoft Sign-In) | Staff or Client | Role Requested | Scope (`FIRM_WIDE` / Client Name / Engagement Code) | Start Date | Expiry (if temp) | Approved By | Notes |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| *Example: Jane Doe* | `jane.doe@example.com` | Staff | `ENGAGEMENT_PARTNER` | Client: Acme Corp | 2026-11-01 | *Permanent* | Firm Managing Partner | Engagement Signing Partner |
+| *Example: John Smith* | `john.smith@client.com` | Client | `CLIENT_PRIMARY` | Client: Acme Corp | 2026-11-01 | *Permanent* | Jane Doe (Partner) | CFO / Primary Signatory |
+
+### CSV Template
+
+```csv
+Full Name,Work Email,Staff or Client,Role Requested,Scope,Start Date,Expiry,Approved By,Notes
+Jane Doe,jane.doe@example.com,Staff,ENGAGEMENT_PARTNER,Client: Acme Corp,2026-11-01,Permanent,Managing Partner,Engagement Signing Partner
+Marcus Vance,marcus.vance@example.com,Staff,QUALITY_REVIEWER,Engagement: ACM-2026-AUD,2026-11-01,2027-03-31,Managing Partner,Independent EQCR
+Elena Rostova,elena.rostova@example.com,Staff,AUDIT_MANAGER,Engagement: ACM-2026-AUD,2026-11-01,Permanent,Jane Doe,Fieldwork Supervision
+David Chen,david.chen@client.com,Client,CLIENT_PRIMARY,Client: Acme Corp,2026-11-01,Permanent,Jane Doe,CFO / Dual-Key Signatory
+Sarah Miller,sarah.miller@client.com,Client,CLIENT_CONTRIBUTOR,Client: Acme Corp,2026-11-01,Permanent,David Chen,Senior Accountant PBC Uploader
+```
+
+---
+
+# Deliverable D5: Documentation Index & README Updates
+
+### 1. Update to `docs/auditsphere-docs-index.md`
+
+Add the following entry under the **User & Operational Guides** section:
+
+```markdown
+- [Roles & Access End-User Guide](user-guides/auditsphere-user-guide-roles-and-access-current.md) — Comprehensive reference for firm partners, managers, client finance leads, and administrators detailing roles, scopes, separation of duties, and access provisioning.
+  - Companion HTML: [auditsphere-user-guide-roles-and-access-current.html](user-guides/auditsphere-user-guide-roles-and-access-current.html)
+  - Request Template: [role-assignment-request-template.csv](user-guides/role-assignment-request-template.csv)
+```
+
+### 2. Update to `README.md` Documentation Table
+
+Add the guide to the Documentation index table:
+
+```markdown
+| Document | Audience | Description | Status |
+| :--- | :--- | :--- | :--- |
+| [Roles & Access Guide](docs/user-guides/auditsphere-user-guide-roles-and-access-current.md) | Partners, Clients, Admins | Role responsibilities, scopes, SoD, and request template | Verified |
+```
+
+---
+
+# Section 7: Final Report
+
+```text
+Files created/updated:
+- docs/user-guides/auditsphere-user-guide-roles-and-access-current.md (D1 canonical guide)
+- docs/user-guides/auditsphere-user-guide-roles-and-access-current.html (D2 self-contained HTML)
+- docs/user-guides/role-assignment-request-template.csv (D4 companion request template)
+- docs/auditsphere-docs-index.md (D5 documentation index link updated)
+- README.md (D5 docs table updated)
+
+Roles covered (10 total):
+- Staff: Engagement Partner, Engagement Quality Reviewer, Audit Manager, Senior Auditor, Staff Auditor, Firm Administrator, Practice Finance Lead.
+- Client: Client Finance Lead, Client Contributor, Client Observer.
+
+Items TO CONFIRM (Appendix B):
+1. Invitation token lifespan (defaulted to 7 days pending tenant configuration confirmation).
+2. Entra background security group sync schedule when live Graph sync is active.
+3. Multi-tenant client email domain restriction whitelisting rules.
+
+Verification status:
+- Verified: Server authorization constraints, dual-key rules (M1-03), EQCR independence (M2-02), and scope containment.
+- Not verified (BLOCKED_EXTERNAL): Live Microsoft Graph automated tenant guest provisioning. PDF export (D3) requires external headless Chrome/Puppeteer; single-file HTML (D2) has been styled with full CSS @media print rules for browser PDF export.
+
+Suggested next step:
+Submit D1 and D2 to the Practice Management Committee and Firm Managing Partner for final sign-off prior to client distribution.
+```
