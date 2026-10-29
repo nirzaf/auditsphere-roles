@@ -35,21 +35,21 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1.0',
       },
       {
-        title: 'AuditSphere — Roles & Access End-User Guide',
+        title: 'AuditSphere — Set up your team’s access',
       },
       {
         name: 'description',
         content:
-          'Interactive end-user and Administrator guide to AuditSphere user roles, scopes, separation of duties, lifecycle responsibilities, and role assignment requests.',
+          'Choose responsibilities, add your people and prepare a team access request for administrator review.',
       },
       {
         property: 'og:title',
-        content: 'AuditSphere — Roles & Access End-User Guide',
+        content: 'AuditSphere — Set up your team’s access',
       },
       {
         property: 'og:description',
         content:
-          'Interactive end-user and Administrator guide to AuditSphere user roles, scopes, separation of duties, lifecycle responsibilities, and role assignment requests.',
+          'Choose responsibilities, add your people and prepare a team access request for administrator review.',
       },
       {
         property: 'og:type',

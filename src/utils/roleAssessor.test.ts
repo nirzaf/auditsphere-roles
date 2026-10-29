@@ -1,204 +1,71 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  detectSeparationOfDutiesWarnings,
-  evaluateDualKeyGate,
-  evaluateSeparationOfDuties,
-  exportRequestsToCsv,
-  recommendRole,
-  validateRoleRequestRow,
-  validateWorkEmail,
-} from './roleAssessor.ts';
-import { INITIAL_REQUEST_ROWS, ROLES } from '../data/rolesData.ts';
+import { ROLES } from '../data/rolesData.ts';
+import type { RoleRequestRow } from '../data/rolesData.ts';
+import { detectSodFindings, exportRequestsToCsv, recommendRole, validateRequestDetails, validateRoleRequestRow } from './roleAssessor.ts';
 
-test('Inventory contains all 10 canonical roles (7 Staff + 3 Client)', () => {
-  assert.equal(ROLES.length, 10);
-  const staffRoles = ROLES.filter((r) => r.accountType === 'Staff');
-  const clientRoles = ROLES.filter((r) => r.accountType === 'Client');
-  assert.equal(staffRoles.length, 7);
-  assert.equal(clientRoles.length, 3);
+const row = (overrides: Partial<RoleRequestRow> = {}): RoleRequestRow => ({ id: 'one', fullName: 'Alex Smith', workEmail: 'alex@firm.test', accountType: 'Staff', roleRequested: 'STAFF', scopeType: 'ENGAGEMENT', scopeTarget: 'Client A / Audit 2026', expiry: '', notes: '', ...overrides });
+
+test('Catalogue maps eleven choices to eleven distinct supported application roles', () => {
+  assert.equal(ROLES.length, 11);
+  assert.deepEqual(ROLES.map(r => r.serverRole).sort(), ['Administrator', 'Partner', 'Manager', 'Senior', 'Staff', 'RelationshipManager', 'FinanceManager', 'FinanceReviewer', 'AccountingPreparer', 'AccountingReviewer', 'ClientUser'].sort());
+  assert.equal(ROLES.filter(r => r.accountType === 'Client').length, 1);
 });
 
-test('Decision tree recommends all 10 roles accurately along Diagram E paths', () => {
-  assert.equal(
-    recommendRole({ isExternalClient: true, clientSignsAcceptanceOrTb: true }).role.code,
-    'CLIENT_PRIMARY'
-  );
-  assert.equal(
-    recommendRole({
-      isExternalClient: true,
-      clientSignsAcceptanceOrTb: false,
-      clientUploadsPbcDocuments: true,
-    }).role.code,
-    'CLIENT_CONTRIBUTOR'
-  );
-  assert.equal(
-    recommendRole({
-      isExternalClient: true,
-      clientSignsAcceptanceOrTb: false,
-      clientUploadsPbcDocuments: false,
-    }).role.code,
-    'CLIENT_VIEWER'
-  );
-  assert.equal(
-    recommendRole({
-      isExternalClient: false,
-      staffPerformsAuditOrAccounting: false,
-      staffManagesUsersOrBilling: 'USERS_ACCESS',
-    }).role.code,
-    'ADMINISTRATOR'
-  );
-  assert.equal(
-    recommendRole({
-      isExternalClient: false,
-      staffPerformsAuditOrAccounting: false,
-      staffManagesUsersOrBilling: 'BILLING_RETAINERS',
-    }).role.code,
-    'FIRM_FINANCE'
-  );
-  assert.equal(
-    recommendRole({
-      isExternalClient: false,
-      staffPerformsAuditOrAccounting: true,
-      staffSignsOpinionOrQualityReview: 'ENGAGEMENT_PARTNER',
-    }).role.code,
-    'ENGAGEMENT_PARTNER'
-  );
-  assert.equal(
-    recommendRole({
-      isExternalClient: false,
-      staffPerformsAuditOrAccounting: true,
-      staffSignsOpinionOrQualityReview: 'QUALITY_REVIEWER',
-    }).role.code,
-    'QUALITY_REVIEWER'
-  );
-  assert.equal(
-    recommendRole({
-      isExternalClient: false,
-      staffPerformsAuditOrAccounting: true,
-      staffSignsOpinionOrQualityReview: 'NO',
-      staffManagesFieldworkOrReviews: 'AUDIT_MANAGER',
-    }).role.code,
-    'AUDIT_MANAGER'
-  );
-  assert.equal(
-    recommendRole({
-      isExternalClient: false,
-      staffPerformsAuditOrAccounting: true,
-      staffSignsOpinionOrQualityReview: 'NO',
-      staffManagesFieldworkOrReviews: 'SENIOR_AUDITOR',
-    }).role.code,
-    'SENIOR_AUDITOR'
-  );
-  assert.equal(
-    recommendRole({
-      isExternalClient: false,
-      staffPerformsAuditOrAccounting: true,
-      staffSignsOpinionOrQualityReview: 'NO',
-      staffManagesFieldworkOrReviews: 'STAFF_AUDITOR',
-    }).role.code,
-    'STAFF_AUDITOR'
-  );
-});
-
-test('M1-03 Dual-Key + Retainer gate unlocks only when all 3 keys are true', () => {
-  const locked = evaluateDualKeyGate({
-    clientAcceptanceKey: true,
-    partnerClearanceKey: true,
-    retainerPaidClearance: false,
-  });
-  assert.equal(locked.isActivated, false);
-  assert.equal(locked.completedCount, 2);
-  assert.equal(locked.missingGates.length, 1);
-
-  const unlocked = evaluateDualKeyGate({
-    clientAcceptanceKey: true,
-    partnerClearanceKey: true,
-    retainerPaidClearance: true,
-  });
-  assert.equal(unlocked.isActivated, true);
-  assert.equal(unlocked.completedCount, 3);
-  assert.equal(unlocked.missingGates.length, 0);
-});
-
-test('Separation of Duties evaluator enforces No Self-Review, EQCR Independence, and Admin != Partner', () => {
-  const selfReview = evaluateSeparationOfDuties({
-    actionType: 'WORKPAPER_REVIEW',
-    actorRole: 'SENIOR_AUDITOR',
-    actorEmail: 'm.vance@example.com',
-    preparedByEmail: 'm.vance@example.com',
-  });
-  assert.equal(selfReview.allowed, false);
-  assert.equal(selfReview.ruleCode, 'M2-02_NO_SELF_REVIEW');
-
-  const independentReview = evaluateSeparationOfDuties({
-    actionType: 'WORKPAPER_REVIEW',
-    actorRole: 'AUDIT_MANAGER',
-    actorEmail: 'm.vance@example.com',
-    preparedByEmail: 'j.doe@example.com',
-  });
-  assert.equal(independentReview.allowed, true);
-
-  const adminSignOff = evaluateSeparationOfDuties({
-    actionType: 'PARTNER_SIGN_OFF',
-    actorRole: 'ADMINISTRATOR',
-    actorEmail: 'e.rostova@example.com',
-  });
-  assert.equal(adminSignOff.allowed, false);
-  assert.equal(adminSignOff.ruleCode, 'ADR_0003_ADMIN_BOUNDARY');
-
-  const eqcrSameAsPartner = evaluateSeparationOfDuties({
-    actionType: 'EQCR_CONCURRENCE',
-    actorRole: 'QUALITY_REVIEWER',
-    actorEmail: 's.jenkins@example.com',
-    engagementPartnerEmail: 's.jenkins@example.com',
-  });
-  assert.equal(eqcrSameAsPartner.allowed, false);
-  assert.equal(eqcrSameAsPartner.ruleCode, 'M2-02_EQCR_INDEPENDENCE');
-});
-
-test('Work email validator rejects personal domains (@gmail.com) and shared mailboxes (accounts@)', () => {
-  const gmailCheck = validateWorkEmail('david.chen@gmail.com');
-  assert.equal(gmailCheck.valid, false);
-  assert.match(gmailCheck.error ?? '', /Personal email domain/);
-
-  const sharedCheck = validateWorkEmail('accounts@client-example.com');
-  assert.equal(sharedCheck.valid, false);
-  assert.match(sharedCheck.error ?? '', /Shared mailbox/);
-
-  const validCorp = validateWorkEmail('d.chen@client-example.com');
-  assert.equal(validCorp.valid, true);
-});
-
-test('Initial 5 worked example rows pass validation and export clean CSV', () => {
-  for (const row of INITIAL_REQUEST_ROWS) {
-    const res = validateRoleRequestRow(row);
-    assert.equal(res.isValid, true, `Row ${row.fullName} failed: ${res.errors.join(', ')}`);
+test('Every supported role/coverage combination validates without sample targets', () => {
+  for (const role of ROLES) for (const scopeType of role.allowedScopes) {
+    const result = validateRoleRequestRow(row({ roleRequested: role.code, accountType: role.accountType, scopeType, scopeTarget: scopeType === 'FIRM_WIDE' ? '' : 'Selected work' }));
+    assert.equal(result.isValid, true, `${role.code}/${scopeType}: ${result.errors}`);
   }
-
-  const csv = exportRequestsToCsv(INITIAL_REQUEST_ROWS);
-  const lines = csv.trim().split('\n');
-  assert.equal(lines.length, 6); // 1 header + 5 worked examples
-  assert.match(lines[1], /Sarah Jenkins,s\.jenkins@example\.com,Staff,ENGAGEMENT_PARTNER/);
 });
 
-test('detectSeparationOfDutiesWarnings flags same user holding ENGAGEMENT_PARTNER and QUALITY_REVIEWER', () => {
-  const warnings = detectSeparationOfDutiesWarnings([
-    ...INITIAL_REQUEST_ROWS,
-    {
-      id: 'req-conflict',
-      fullName: 'Sarah Jenkins',
-      workEmail: 's.jenkins@example.com',
-      accountType: 'Staff',
-      roleRequested: 'QUALITY_REVIEWER',
-      scopeType: 'CLIENT',
-      scopeTarget: 'Client: Acme Corp',
-      startDate: '2026-11-01',
-      expiry: '',
-      approvedBy: 'Managing Partner',
-      notes: 'Conflict test',
-    },
-  ]);
-  assert.equal(warnings.length > 0, true);
-  assert.match(warnings[0], /M2-02 Independence Conflict/);
+test('Client users cannot have group or firm-wide coverage', () => {
+  for (const scopeType of ['GROUP', 'FIRM_WIDE'] as const) assert.equal(validateRoleRequestRow(row({ roleRequested: 'CLIENT_USER', accountType: 'Client', scopeType, scopeTarget: '' })).isValid, false);
+});
+
+test('Coverage target cannot be omitted or attached to whole-firm coverage', () => {
+  assert.equal(validateRoleRequestRow(row({ scopeTarget: '' })).isValid, false);
+  assert.equal(validateRoleRequestRow(row({ scopeType: 'FIRM_WIDE', scopeTarget: 'Firm-Wide' })).isValid, false);
+});
+
+test('Rejects malformed, impossible, past and group expiry dates', () => {
+  for (const expiry of ['not-a-date', '2099-02-30', '2099-13-01', '2020-01-01']) assert.equal(validateRoleRequestRow(row({ expiry })).isValid, false, expiry);
+  assert.equal(validateRoleRequestRow(row({ scopeType: 'GROUP', expiry: '2099-01-01' })).isValid, false);
+  assert.equal(validateRoleRequestRow(row({ expiry: '2099-01-01' })).isValid, true);
+});
+
+test('Request identity requires firm, name and a structurally valid contact email', () => {
+  for (const contactEmail of ['', 'bad', 'has spaces@firm.test', 'one@two@firm.test']) assert.equal(validateRequestDetails({ firmName: 'Firm', submittedBy: 'Alex', contactEmail }).isValid, false);
+  assert.equal(validateRequestDetails({ firmName: 'Firm', submittedBy: 'Alex', contactEmail: 'contact@firm.test' }).isValid, true);
+});
+
+test('CSV has no sample rows and exports exact role, scope type and target separately', () => {
+  assert.equal(exportRequestsToCsv([]).trim().split('\n').length, 1);
+  const csv = exportRequestsToCsv([row()], { firmName: 'Firm', submittedBy: 'Alex', contactEmail: 'alex@firm.test' });
+  assert.match(csv, /Application role,Coverage type,Coverage target/);
+  assert.match(csv, /Audit Staff,Staff,ENGAGEMENT,Client A \/ Audit 2026/);
+  assert.match(csv, /Firm \/ client,Firm/);
+  assert.doesNotMatch(csv, /Sarah Jenkins|Acme/);
+});
+
+test('CSV quotes commas, quotes and newlines and neutralises spreadsheet formulas', () => {
+  const csv = exportRequestsToCsv([row({ fullName: '=HYPERLINK("unsafe")', notes: 'A, "quoted"\nnote' })]);
+  assert.ok(csv.includes('"\'=HYPERLINK(""unsafe"")"'));
+  assert.ok(csv.includes('"A, ""quoted""\nnote"'));
+});
+
+test('Independence warnings compare coverage and distinguish uncertain overlap', () => {
+  const prepare = row({ roleRequested: 'ACCOUNTING_PREPARER' });
+  const review = row({ id: 'two', roleRequested: 'ACCOUNTING_REVIEWER' });
+  assert.equal(detectSodFindings([prepare, review])[0].state, 'CONFLICT');
+  assert.equal(detectSodFindings([prepare, { ...review, scopeTarget: 'Client B / Audit 2026' }]).length, 0);
+  assert.equal(detectSodFindings([prepare, { ...review, scopeType: 'CLIENT', scopeTarget: 'Client A' }])[0].state, 'REVIEW');
+});
+
+test('Role finder distinguishes finance, accounting and client responsibilities', () => {
+  assert.equal(recommendRole({ isExternalClient: true }).role.code, 'CLIENT_USER');
+  assert.equal(recommendRole({ isExternalClient: false, staffWorksOn: 'FIRM_FINANCE', financeRoleSide: 'MANAGE' }).role.code, 'FINANCE_MANAGER');
+  assert.equal(recommendRole({ isExternalClient: false, staffWorksOn: 'FIRM_FINANCE', financeRoleSide: 'REVIEW' }).role.code, 'FINANCE_REVIEWER');
+  assert.equal(recommendRole({ isExternalClient: false, staffWorksOn: 'CLIENT_ACCOUNTING', accountingRoleSide: 'PREPARE' }).role.code, 'ACCOUNTING_PREPARER');
+  assert.equal(recommendRole({ isExternalClient: false, staffWorksOn: 'CLIENT_ACCOUNTING', accountingRoleSide: 'REVIEW' }).role.code, 'ACCOUNTING_REVIEWER');
 });

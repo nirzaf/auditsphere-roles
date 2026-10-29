@@ -1,23 +1,39 @@
+// Validation, recommendation and export logic for the access request tracker.
+// Semantics follow the AuditSphere role-assignment service: no future-dated
+// access, expiry at date granularity (server floor is 5 minutes), group grants
+// never expire, and maker-checker pairs flagged scope-aware.
+
 import {
   ROLES,
+  SCOPES,
+  SOD_PAIRS,
+} from '../data/rolesData.ts';
+import type {
   RoleCode,
   RoleDefinition,
   RoleRequestRow,
+  RequestDetails,
   ScopeCode,
 } from '../data/rolesData.ts';
 
+export type { RoleRequestRow, RequestDetails } from '../data/rolesData.ts';
+
 export interface DecisionTreeAnswers {
+  /** Staff identities use the firm's work directory; client identities use the portal. */
   isExternalClient: boolean;
-  // Client branch (when isExternalClient === true)
-  clientSignsAcceptanceOrTb?: boolean;
-  clientUploadsPbcDocuments?: boolean;
-  // Staff branch (when isExternalClient === false)
-  staffPerformsAuditOrAccounting?: boolean;
-  // Non-audit staff branch
-  staffManagesUsersOrBilling?: 'USERS_ACCESS' | 'BILLING_RETAINERS';
-  // Audit staff branch
-  staffSignsOpinionOrQualityReview?: 'ENGAGEMENT_PARTNER' | 'QUALITY_REVIEWER' | 'NO';
-  staffManagesFieldworkOrReviews?: 'AUDIT_MANAGER' | 'SENIOR_AUDITOR' | 'STAFF_AUDITOR';
+  /** Staff branch (when isExternalClient === false). */
+  staffWorksOn?:
+    | 'AUDIT_DELIVERY'
+    | 'CLIENT_ACCOUNTING'
+    | 'FIRM_FINANCE'
+    | 'CLIENT_RELATIONSHIPS'
+    | 'ADMINISTRATION';
+  /** Audit delivery split. */
+  auditRoleLevel?: 'PARTNER' | 'MANAGER' | 'SENIOR' | 'STAFF';
+  /** Client accounting split. */
+  accountingRoleSide?: 'PREPARE' | 'REVIEW';
+  /** Firm finance split. */
+  financeRoleSide?: 'MANAGE' | 'REVIEW';
 }
 
 export interface RoleRecommendation {
@@ -28,43 +44,25 @@ export interface RoleRecommendation {
   decisionPath: string[];
 }
 
-export interface DualKeyGateState {
-  clientAcceptanceKey: boolean;
-  partnerClearanceKey: boolean;
-  retainerPaidClearance: boolean;
-}
-
-export interface DualKeyGateResult {
-  isActivated: boolean;
-  statusLabel: 'Engagement Activated (Planning Unlocked)' | 'Engagement Locked (Read-Only Onboarding)';
-  completedCount: number;
-  missingGates: string[];
-  serverMessage: string;
-}
-
-export interface SeparationOfDutiesScenario {
-  actionType:
-    | 'WORKPAPER_REVIEW'
-    | 'EQCR_CONCURRENCE'
-    | 'PARTNER_SIGN_OFF'
-    | 'RETAINER_CLEARANCE';
-  actorRole: RoleCode;
-  actorEmail: string;
-  preparedByEmail?: string;
-  engagementPartnerEmail?: string;
-}
-
-export interface SeparationOfDutiesEvaluation {
-  allowed: boolean;
-  ruleCode: 'M2-02_NO_SELF_REVIEW' | 'M2-02_EQCR_INDEPENDENCE' | 'ADR_0003_ADMIN_BOUNDARY' | 'M1-03_ROLE_AUTHORITY';
-  verdictTitle: string;
-  serverReason: string;
-}
-
 export interface RowValidationResult {
   isValid: boolean;
   errors: string[];
   policyWarnings: string[];
+}
+
+export interface DetailsValidationResult {
+  isValid: boolean;
+  errors: string[];
+}
+
+export type SodState = 'CONFLICT' | 'REVIEW' | 'CLEAR';
+
+export interface SodFinding {
+  email: string;
+  roles: [RoleCode, RoleCode];
+  state: 'CONFLICT' | 'REVIEW';
+  /** Verbatim server wording plus the scope context. */
+  message: string;
 }
 
 const PERSONAL_EMAIL_DOMAINS = new Set([
@@ -98,9 +96,8 @@ export function getRoleByCode(code: RoleCode): RoleDefinition {
 }
 
 /**
- * Validates work email syntax and enforces AuditSphere corporate Entra ID rules:
- * - Rejects personal domains (@gmail.com, @yahoo.com, etc.) per FAQ Q2 & Section 9
- * - Rejects shared mailboxes (accounts@, audit-team@, etc.) per FAQ Q1
+ * Validates work email syntax and enforces the sign-in rules:
+ * Microsoft-identity sign-in only, individual addresses only.
  */
 export function validateWorkEmail(email: string): {
   valid: boolean;
@@ -142,7 +139,7 @@ export function validateWorkEmail(email: string): {
   if (!domainPart.includes('.') || domainPart.startsWith('.') || domainPart.endsWith('.')) {
     return {
       valid: false,
-      error: 'Work email must include a valid corporate domain (e.g., name@example.com).',
+      error: 'Work email must include a valid domain (e.g., name@firm.com).',
       policyWarnings,
     };
   }
@@ -150,7 +147,7 @@ export function validateWorkEmail(email: string): {
   if (PERSONAL_EMAIL_DOMAINS.has(domainPart)) {
     return {
       valid: false,
-      error: `Personal email domain "@${domainPart}" is rejected. Provide the corporate Microsoft Entra ID work email (FAQ Q2).`,
+      error: `Personal domain "@${domainPart}" is rejected. Use the Microsoft sign-in identity issued to this person.`,
       policyWarnings,
     };
   }
@@ -158,7 +155,7 @@ export function validateWorkEmail(email: string): {
   if (SHARED_MAILBOX_PREFIXES.has(localPart)) {
     return {
       valid: false,
-      error: `Shared mailbox "${localPart}@${domainPart}" is rejected. AuditSphere requires an individual named account for No Self-Review traceability (FAQ Q1).`,
+      error: `Shared mailbox "${localPart}@${domainPart}" is rejected \u2014 every decision needs one accountable person.`,
       policyWarnings,
     };
   }
@@ -166,365 +163,74 @@ export function validateWorkEmail(email: string): {
   return { valid: true, policyWarnings };
 }
 
-/**
- * Implements the exact Decision Tree from Section 8 (Diagram E) of the specification.
- */
-export function recommendRole(answers: DecisionTreeAnswers): RoleRecommendation {
-  const path: string[] = [];
-
-  if (answers.isExternalClient) {
-    path.push('Organization: Client Organization (Client Portal)');
-    if (answers.clientSignsAcceptanceOrTb) {
-      path.push('Signs engagement acceptance (Key 1) & approves TB/adjustments: Yes');
-      const role = getRoleByCode('CLIENT_PRIMARY');
-      return {
-        role,
-        recommendedScopes: ['CLIENT', 'ENGAGEMENT', 'GROUP'],
-        rationale:
-          'Executes the Client Acceptance Key (Key 1), formally submits Trial Balances and PBC packages, and approves management adjustments.',
-        makerCheckerNote:
-          'Client Acceptance Key (Key 1) must be paired with the Engagement Partner Clearance Key (Key 2) and Paid Retainer clearance before the engagement unlocks (M1-03).',
-        decisionPath: path,
-      };
-    }
-
-    path.push('Signs engagement acceptance (Key 1) & approves TB/adjustments: No');
-    if (answers.clientUploadsPbcDocuments !== false) {
-      path.push('Uploads documents for PBC requests: Yes');
-      const role = getRoleByCode('CLIENT_CONTRIBUTOR');
-      return {
-        role,
-        recommendedScopes: ['ENGAGEMENT', 'CLIENT'],
-        rationale:
-          'Uploads invoices, bank statements, and schedules against assigned PBC items in the Client Portal without signing authority.',
-        makerCheckerNote:
-          'Submissions are overseen by CLIENT_PRIMARY and verified by SENIOR_AUDITOR / AUDIT_MANAGER.',
-        decisionPath: path,
-      };
-    }
-
-    path.push('Uploads documents for PBC requests: No (Read-only observer)');
-    const role = getRoleByCode('CLIENT_VIEWER');
-    return {
-      role,
-      recommendedScopes: ['CLIENT', 'ENGAGEMENT', 'GROUP'],
-      rationale:
-        'Provides read-only visibility into audit milestone progress and final published reports for executives or Audit Committee members.',
-      makerCheckerNote:
-        'Strictly read-only; cannot upload files, post comments, or execute acceptance keys.',
-      decisionPath: path,
-    };
-  }
-
-  // Audit Firm Staff branch
-  path.push('Organization: Audit Firm Staff (Staff Portal)');
-  if (answers.staffPerformsAuditOrAccounting === false) {
-    path.push('Performs or reviews audit/accounting work: No');
-    if (answers.staffManagesUsersOrBilling === 'BILLING_RETAINERS') {
-      path.push('Function: Billing, Retainer Invoices & Paid Advance Clearance');
-      const role = getRoleByCode('FIRM_FINANCE');
-      return {
-        role,
-        recommendedScopes: ['FIRM_WIDE', 'CLIENT', 'ENGAGEMENT'],
-        rationale:
-          'Manages fee schedules, retainer invoicing, and records the Retainer Paid Clearance (Key 3) required to unlock engagements.',
-        makerCheckerNote:
-          'Cannot view confidential audit working papers or execute Partner Clearance Keys.',
-        decisionPath: path,
-      };
-    }
-
-    path.push('Function: User Access, Roster Bindings & Entra ID Settings');
-    const role = getRoleByCode('ADMINISTRATOR');
-    return {
-      role,
-      recommendedScopes: ['FIRM_WIDE'],
-      rationale:
-        'Manages Users & Access (/admin/access), binds roster identities, assigns RoleGrants, and generates external invitation links.',
-      makerCheckerNote:
-        'ADR-0003: Administrator access never confers Partner authority or access to audit working papers.',
-      decisionPath: path,
-    };
-  }
-
-  path.push('Performs or reviews audit/accounting work: Yes');
-  if (answers.staffSignsOpinionOrQualityReview === 'ENGAGEMENT_PARTNER') {
-    path.push('Authority: Signs Final Audit Opinion & Partner Acceptance Key (Key 2)');
-    const role = getRoleByCode('ENGAGEMENT_PARTNER');
-    return {
-      role,
-      recommendedScopes: ['CLIENT', 'ENGAGEMENT', 'GROUP', 'FIRM_WIDE'],
-      rationale:
-        'Ultimate signing authority for the audit engagement: executes Partner Clearance Key (Key 2), locks materiality, signs the audit opinion, and locks the archive.',
-      makerCheckerNote:
-        'M2-02: Cannot serve as QUALITY_REVIEWER (EQCR) on the same engagement or self-review own working papers.',
-      decisionPath: path,
-    };
-  }
-
-  if (answers.staffSignsOpinionOrQualityReview === 'QUALITY_REVIEWER') {
-    path.push('Authority: Independent Quality Reviewer (EQCR Concurrence)');
-    const role = getRoleByCode('QUALITY_REVIEWER');
-    return {
-      role,
-      recommendedScopes: ['ENGAGEMENT', 'CLIENT', 'GROUP', 'FIRM_WIDE'],
-      rationale:
-        'Performs objective evaluation of significant audit judgments and issues mandatory EQCR Concurrence (M2-02) prior to report issuance.',
-      makerCheckerNote:
-        'Strict independence (M2-02): Cannot edit workpapers or hold ENGAGEMENT_PARTNER / AUDIT_MANAGER / SENIOR_AUDITOR / STAFF_AUDITOR on the same engagement.',
-      decisionPath: path,
-    };
-  }
-
-  path.push('Authority: Fieldwork & Managerial Execution');
-  if (answers.staffManagesFieldworkOrReviews === 'AUDIT_MANAGER') {
-    path.push('Role Level: Manages budgets, workflows & performs primary Manager Review');
-    const role = getRoleByCode('AUDIT_MANAGER');
-    return {
-      role,
-      recommendedScopes: ['ENGAGEMENT', 'CLIENT', 'GROUP', 'FIRM_WIDE'],
-      rationale:
-        'Configures engagement workplans and budgets, manages PBC requests, and performs primary Managerial Review of all fieldwork.',
-      makerCheckerNote:
-        'Cannot self-review working papers they prepared or execute Partner-only sign-offs.',
-      decisionPath: path,
-    };
-  }
-
-  if (answers.staffManagesFieldworkOrReviews === 'SENIOR_AUDITOR') {
-    path.push('Role Level: Leads fieldwork, imports TB/GL & performs 1st-level review');
-    const role = getRoleByCode('SENIOR_AUDITOR');
-    return {
-      role,
-      recommendedScopes: ['ENGAGEMENT', 'CLIENT', 'GROUP'],
-      rationale:
-        'Imports client TB/GL, prepares complex audit sections, verifies client PBC uploads, and performs first-level review of Staff Auditor work.',
-      makerCheckerNote:
-        'Cannot review their own prepared working papers or hold FIRM_WIDE scope.',
-      decisionPath: path,
-    };
-  }
-
-  path.push('Role Level: Prepares assigned working papers & schedules');
-  const role = getRoleByCode('STAFF_AUDITOR');
-  return {
-    role,
-    recommendedScopes: ['ENGAGEMENT', 'CLIENT'],
-    rationale:
-      'Executes assigned audit procedures, uploads supporting schedules, and submits working papers for Senior or Manager review.',
-    makerCheckerNote:
-      'Preparer role only (zero review authority); cannot hold FIRM_WIDE or GROUP scope.',
-    decisionPath: path,
-  };
+/** Contact email accepts any syntactically valid mailbox (warnings, not rejections). */
+export function validateContactEmail(email: string): DetailsValidationResult['errors'] {
+  const trimmed = (email ?? '').trim();
+  if (!trimmed) return ['Contact email is required so we can confirm the submission.'];
+  return trimmed.length <= 320 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)
+    ? [] : ['Contact email must be a valid single email address.'];
 }
 
-/**
- * Evaluates the M1-03 Dual-Key Engagement Acceptance + Paid Retainer Activation Gate.
- */
-export function evaluateDualKeyGate(state: DualKeyGateState): DualKeyGateResult {
-  const missingGates: string[] = [];
-  if (!state.clientAcceptanceKey) {
-    missingGates.push('Key 1: Client Acceptance Key (CLIENT_PRIMARY)');
-  }
-  if (!state.partnerClearanceKey) {
-    missingGates.push('Key 2: Partner Clearance Key (ENGAGEMENT_PARTNER)');
-  }
-  if (!state.retainerPaidClearance) {
-    missingGates.push('Key 3: Retainer Paid Clearance (FIRM_FINANCE)');
-  }
-
-  const completedCount = 3 - missingGates.length;
-  const isActivated = missingGates.length === 0;
-
-  return {
-    isActivated,
-    statusLabel: isActivated
-      ? 'Engagement Activated (Planning Unlocked)'
-      : 'Engagement Locked (Read-Only Onboarding)',
-    completedCount,
-    missingGates,
-    serverMessage: isActivated
-      ? 'All three M1-03 gates verified. Engagement transitioned to Phase 2 (Planning) and fieldwork workspaces are unlocked.'
-      : `Engagement remains locked in read-only onboarding state. Pending: ${missingGates.join(' + ')}.`,
-  };
+/** Today's date in UTC as YYYY-MM-DD for expiry comparisons. */
+export function utcTodayIso(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
-/**
- * Evaluates server-side Separation of Duties rules (M2-02, ADR-0003, M1-03).
- */
-export function evaluateSeparationOfDuties(
-  scenario: SeparationOfDutiesScenario
-): SeparationOfDutiesEvaluation {
-  const actorEmail = scenario.actorEmail.trim().toLowerCase();
-  const prepEmail = (scenario.preparedByEmail ?? '').trim().toLowerCase();
-  const partnerEmail = (scenario.engagementPartnerEmail ?? '').trim().toLowerCase();
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-  if (scenario.actorRole === 'ADMINISTRATOR') {
-    return {
-      allowed: false,
-      ruleCode: 'ADR_0003_ADMIN_BOUNDARY',
-      verdictTitle: 'Blocked by ADR-0003 (Admin != Partner/Audit Authority)',
-      serverReason:
-        '"Administrator access does not confer Partner authority." Firm Administrators manage identity bindings and role grants but are blocked from reviewing working papers, clearing keys, or signing opinions.',
-    };
-  }
-
-  if (scenario.actionType === 'WORKPAPER_REVIEW') {
-    if (
-      scenario.actorRole !== 'SENIOR_AUDITOR' &&
-      scenario.actorRole !== 'AUDIT_MANAGER' &&
-      scenario.actorRole !== 'ENGAGEMENT_PARTNER'
-    ) {
-      return {
-        allowed: false,
-        ruleCode: 'M1-03_ROLE_AUTHORITY',
-        verdictTitle: `Blocked: ${scenario.actorRole} Cannot Sign Off Workpapers`,
-        serverReason:
-          'Only SENIOR_AUDITOR, AUDIT_MANAGER, or ENGAGEMENT_PARTNER can perform workpaper review sign-offs.',
-      };
-    }
-
-    if (actorEmail && prepEmail && actorEmail === prepEmail) {
-      return {
-        allowed: false,
-        ruleCode: 'M2-02_NO_SELF_REVIEW',
-        verdictTitle: 'Blocked by No Self-Review Rule (PreparedByUserId == ReviewerUserId)',
-        serverReason: `User "${actorEmail}" prepared this working paper. The server rejects any review command where ReviewerUserId matches PreparedByUserId.`,
-      };
-    }
-
-    return {
-      allowed: true,
-      ruleCode: 'M2-02_NO_SELF_REVIEW',
-      verdictTitle: 'Allowed: Independent Reviewer Verified',
-      serverReason: `Reviewer "${actorEmail}" (${scenario.actorRole}) is distinct from preparer "${prepEmail || 'staff@example.com'}". Server records review sign-off.`,
-    };
-  }
-
-  if (scenario.actionType === 'EQCR_CONCURRENCE') {
-    if (scenario.actorRole !== 'QUALITY_REVIEWER') {
-      return {
-        allowed: false,
-        ruleCode: 'M2-02_EQCR_INDEPENDENCE',
-        verdictTitle: 'Blocked: Requires QUALITY_REVIEWER Role',
-        serverReason:
-          'Only an assigned QUALITY_REVIEWER can issue Engagement Quality Control Review (EQCR) concurrence.',
-      };
-    }
-
-    if (actorEmail && partnerEmail && actorEmail === partnerEmail) {
-      return {
-        allowed: false,
-        ruleCode: 'M2-02_EQCR_INDEPENDENCE',
-        verdictTitle: 'Blocked by M2-02 (Engagement Partner Cannot Be EQCR)',
-        serverReason: `User "${actorEmail}" is the assigned ENGAGEMENT_PARTNER on this engagement and is strictly barred from issuing EQCR concurrence on their own engagement.`,
-      };
-    }
-
-    return {
-      allowed: true,
-      ruleCode: 'M2-02_EQCR_INDEPENDENCE',
-      verdictTitle: 'Allowed: Independent EQCR Concurrence Verified',
-      serverReason: `QUALITY_REVIEWER "${actorEmail}" is independent of Engagement Partner "${partnerEmail || 's.jenkins@example.com'}". Concurrence recorded.`,
-    };
-  }
-
-  if (scenario.actionType === 'PARTNER_SIGN_OFF') {
-    if (scenario.actorRole !== 'ENGAGEMENT_PARTNER') {
-      return {
-        allowed: false,
-        ruleCode: 'M1-03_ROLE_AUTHORITY',
-        verdictTitle: 'Blocked: Partner-Only Authority Required',
-        serverReason: `Role "${scenario.actorRole}" cannot execute Partner Clearance Key (Key 2), lock materiality, or sign the final audit opinion.`,
-      };
-    }
-    return {
-      allowed: true,
-      ruleCode: 'M1-03_ROLE_AUTHORITY',
-      verdictTitle: 'Allowed: ENGAGEMENT_PARTNER Authority Verified',
-      serverReason: `ENGAGEMENT_PARTNER "${actorEmail}" is authorized to execute Partner sign-off and lock the engagement archive.`,
-    };
-  }
-
-  // RETAINER_CLEARANCE
-  if (scenario.actorRole !== 'FIRM_FINANCE') {
-    return {
-      allowed: false,
-      ruleCode: 'M1-03_ROLE_AUTHORITY',
-      verdictTitle: 'Blocked: Requires FIRM_FINANCE Role',
-      serverReason: `Role "${scenario.actorRole}" cannot record Retainer Paid Clearance. Only FIRM_FINANCE can verify and clear client retainer payments.`,
-    };
-  }
-
-  return {
-    allowed: true,
-    ruleCode: 'M1-03_ROLE_AUTHORITY',
-    verdictTitle: 'Allowed: FIRM_FINANCE Retainer Clearance Verified',
-    serverReason: `FIRM_FINANCE "${actorEmail}" recorded Paid Advance clearance (Key 3).`,
-  };
-}
-
-export function validateRoleRequestRow(row: RoleRequestRow): RowValidationResult {
+export function validateRequestDetails(details: Partial<RequestDetails>): DetailsValidationResult {
   const errors: string[] = [];
-  const policyWarnings: string[] = [];
+  const firmName = (details.firmName ?? '').trim();
+  const submittedBy = (details.submittedBy ?? '').trim();
 
-  if (!row.fullName.trim()) {
-    errors.push('Full name is required.');
+  if (!firmName) {
+    errors.push('Firm or client name is required.');
+  } else if (firmName.length > 200) {
+    errors.push('Firm or client name must be 200 characters or fewer.');
   }
 
-  const emailCheck = validateWorkEmail(row.workEmail);
-  if (!emailCheck.valid && emailCheck.error) {
-    errors.push(emailCheck.error);
-  }
-  policyWarnings.push(...emailCheck.policyWarnings);
-
-  const roleDef = getRoleByCode(row.roleRequested);
-
-  if (row.accountType !== roleDef.accountType) {
-    errors.push(
-      `Role "${row.roleRequested}" (${roleDef.displayLabel}) requires Account Type "${roleDef.accountType}", not "${row.accountType}".`
-    );
+  if (!submittedBy) {
+    errors.push('Your name is required.');
+  } else if (submittedBy.length > 120) {
+    errors.push('Your name must be 120 characters or fewer.');
   }
 
-  if (!roleDef.allowedScopes.includes(row.scopeType)) {
-    errors.push(
-      `Role "${row.roleRequested}" does not allow scope "${row.scopeType}". Allowed scopes: ${roleDef.allowedScopes.join(', ')}.`
-    );
-  }
+  errors.push(...validateContactEmail(details.contactEmail ?? ''));
 
-  if (row.scopeType !== 'FIRM_WIDE' && !row.scopeTarget.trim()) {
-    errors.push(
-      `Specify the target ${row.scopeType.toLowerCase()} name (e.g., "Client: Acme Corp" or "Engagement: FY2026 Audit - Acme Corp").`
-    );
-  }
-
-  if (!row.startDate.trim()) {
-    errors.push('Start date (YYYY-MM-DD) is required.');
-  }
-
-  if (!row.approvedBy.trim()) {
-    errors.push('Approved by (Partner or Client Lead name) is required.');
-  }
-
-  if (
-    (row.roleRequested === 'STAFF_AUDITOR' ||
-      row.roleRequested === 'CLIENT_CONTRIBUTOR') &&
-    !row.expiry.trim()
-  ) {
-    policyWarnings.push(
-      `Recommended: Set an Expiry Date for ${row.roleRequested} so temporary fieldwork or PBC upload access revokes automatically at midnight UTC.`
-    );
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-    policyWarnings,
-  };
+  return { isValid: errors.length === 0, errors };
 }
 
-export function detectSeparationOfDutiesWarnings(rows: RoleRequestRow[]): string[] {
-  const warnings: string[] = [];
+/**
+ * Scope containment between two grants of opposite maker/checker roles.
+ * CLEAR = provably disjoint; CONFLICT = one provably contains the other;
+ * REVIEW = overlap cannot be determined from the submitted text.
+ */
+function scopeOverlap(a: Pick<RoleRequestRow, 'scopeType' | 'scopeTarget'>, b: Pick<RoleRequestRow, 'scopeType' | 'scopeTarget'>): SodState {
+  const norm = (t: string) =>
+    t.trim().toLowerCase().replace(/^(client|engagement|group)\s*:\s*/, '');
+  const aTarget = norm(a.scopeTarget);
+  const bTarget = norm(b.scopeTarget);
+  const sameNonEmptyTarget = () => aTarget && aTarget === bTarget;
+
+  if (a.scopeType === 'GROUP' || b.scopeType === 'GROUP') {
+    if (a.scopeType === b.scopeType) return sameNonEmptyTarget() ? 'CONFLICT' : 'REVIEW';
+    // Group vs client/engagement: component-entity overlap is unknowable here.
+    return 'REVIEW';
+  }
+  if (a.scopeType === 'FIRM_WIDE' || b.scopeType === 'FIRM_WIDE') {
+    // Firm-wide covers every client and engagement (never groups).
+    return 'CONFLICT';
+  }
+  if (sameNonEmptyTarget()) return 'CONFLICT';
+  if (a.scopeType !== b.scopeType) {
+    // Client vs engagement of the same client cannot be ruled out.
+    return 'REVIEW';
+  }
+  return 'CLEAR';
+}
+
+export function detectSodFindings(rows: RoleRequestRow[]): SodFinding[] {
+  const findings: SodFinding[] = [];
   const byEmail = new Map<string, RoleRequestRow[]>();
 
   for (const row of rows) {
@@ -536,37 +242,315 @@ export function detectSeparationOfDutiesWarnings(rows: RoleRequestRow[]): string
   }
 
   for (const [email, userRows] of byEmail.entries()) {
-    const roles = new Set(userRows.map((r) => r.roleRequested));
+    for (const pair of SOD_PAIRS) {
+      const aRows = userRows.filter((r) => r.roleRequested === pair.a);
+      const bRows = userRows.filter((r) => r.roleRequested === pair.b);
+      if (aRows.length === 0 || bRows.length === 0) continue;
 
-    if (roles.has('ENGAGEMENT_PARTNER') && roles.has('QUALITY_REVIEWER')) {
-      warnings.push(
-        `M2-02 Independence Conflict (${email}): The same person cannot hold both ENGAGEMENT_PARTNER and QUALITY_REVIEWER (EQCR) on the same engagement.`
-      );
-    }
+      let worst: SodState = 'CLEAR';
+      let scopeText = '';
+      for (const a of aRows) {
+        for (const b of bRows) {
+          const state = scopeOverlap(a, b);
+          if (state === 'CONFLICT') {
+            worst = 'CONFLICT';
+            scopeText = describeScopes(a, b);
+            break;
+          }
+          if (state === 'REVIEW' && worst === 'CLEAR') {
+            worst = 'REVIEW';
+            scopeText = describeScopes(a, b);
+          }
+        }
+        if (worst === 'CONFLICT') break;
+      }
 
-    if (
-      roles.has('QUALITY_REVIEWER') &&
-      (roles.has('AUDIT_MANAGER') ||
-        roles.has('SENIOR_AUDITOR') ||
-        roles.has('STAFF_AUDITOR'))
-    ) {
-      warnings.push(
-        `M2-02 Independence Conflict (${email}): QUALITY_REVIEWER must be independent of the engagement delivery team (cannot also hold AUDIT_MANAGER, SENIOR_AUDITOR, or STAFF_AUDITOR on the same engagement).`
-      );
-    }
+      if (worst === 'CLEAR') continue;
 
-    if (roles.has('ADMINISTRATOR') && roles.size > 1) {
-      warnings.push(
-        `ADR-0003 Governance Note (${email}): ADMINISTRATOR is requested alongside an operational role (${[...roles].filter((r) => r !== 'ADMINISTRATOR').join(', ')}). Confirm that dual assignment is explicitly approved by the Managing Partner.`
-      );
+      const verb = worst === 'CONFLICT' ? 'always conflicts' : 'needs administrator review';
+      findings.push({
+        email,
+        roles: [pair.a, pair.b],
+        state: worst,
+        message: `${pair.note} ${scopeText ? `${scopeText}: this pairing ` : 'This pairing '}${verb} at the scopes shown.`,
+      });
     }
   }
 
-  return warnings;
+  return findings;
+}
+
+function describeScopes(a: RoleRequestRow, b: RoleRequestRow): string {
+  const label = (r: RoleRequestRow) =>
+    r.scopeType === 'FIRM_WIDE'
+      ? 'whole firm'
+      : `${getDoc(r.scopeType, r.scopeTarget)}`;
+  const getDoc = (scope: ScopeCode, target: string) => {
+    const def = SCOPES.find((s) => s.code === scope);
+    return `${def ? def.label.toLowerCase() : scope}${target.trim() ? ` \u201c${target.trim()}”` : ''}`;
+  };
+  return `${label(a)} vs ${label(b)}`;
+}
+
+/**
+ * Back-compat facade: every finding rendered as one advisory string.
+ * Contact rows never generate errors on their own.
+ */
+export function detectSeparationOfDutiesWarnings(rows: RoleRequestRow[]): string[] {
+  return detectSodFindings(rows).map((f) => f.message);
+}
+
+export function recommendRole(answers: DecisionTreeAnswers): RoleRecommendation {
+  const path: string[] = [];
+
+  if (answers.isExternalClient) {
+    path.push('Identity: client side (signs in through a Microsoft guest invitation)');
+    const role = getRoleByCode('CLIENT_USER');
+    return {
+      role,
+      recommendedScopes: ['ENGAGEMENT', 'CLIENT'],
+      rationale:
+        'Client-side people use the portal for an assigned client or engagement and respond to document requests. Their access never widens to the firm.',
+      makerCheckerNote:
+        'Portal powers start at first sign-in and pause during freeze windows; requests are answered by the person who owns them or is delegated.',
+      decisionPath: path,
+    };
+  }
+
+  path.push('Identity: firm staff (signs in through the firm\u2019s Microsoft directory)');
+
+  switch (answers.staffWorksOn) {
+    case 'ADMINISTRATION': {
+      path.push('Work: administer users, roles and the sign-in connection');
+      const role = getRoleByCode('ADMINISTRATOR');
+      return {
+        role,
+        recommendedScopes: ['FIRM_WIDE', 'CLIENT', 'ENGAGEMENT'],
+        rationale:
+          'Administration binds identities, grants and revokes access across the firm, and keeps the Microsoft 365 connection healthy.',
+        makerCheckerNote:
+          'Administrators cannot change their own access \u2014 a second administrator must approve it, and the last firm-wide administrator cannot be revoked without a replacement.',
+        decisionPath: path,
+      };
+    }
+    case 'CLIENT_RELATIONSHIPS': {
+      path.push('Work: client relationship records and acceptance status');
+      const role = getRoleByCode('RELATIONSHIP_MANAGER');
+      return {
+        role,
+        recommendedScopes: ['CLIENT', 'FIRM_WIDE', 'ENGAGEMENT'],
+        rationale:
+          'Keeps the commercial picture accurate: manage client relationship records and watch acceptance status, one client at a time.',
+        makerCheckerNote: 'Record-keeping and status only \u2014 no audit, accounting or approval authority.',
+        decisionPath: path,
+      };
+    }
+    case 'FIRM_FINANCE': {
+      path.push('Work: firm billing and ledger');
+      if (answers.financeRoleSide === 'REVIEW') {
+        path.push('Duty: approve what finance prepares');
+        const role = getRoleByCode('FINANCE_REVIEWER');
+        return {
+          role,
+          recommendedScopes: ['FIRM_WIDE', 'CLIENT', 'ENGAGEMENT', 'GROUP'],
+          rationale:
+            'Reviews and approves firm finance postings: invoices and journals prepared by the publisher role.',
+          makerCheckerNote:
+            'The server rejects approving your own preparation \u2014 keep preparation and review in different people.',
+          decisionPath: path,
+        };
+      }
+      path.push('Duty: manage billing, ledger and preparation');
+      const role = getRoleByCode('FINANCE_MANAGER');
+      return {
+        role,
+        recommendedScopes: ['FIRM_WIDE', 'CLIENT', 'ENGAGEMENT', 'GROUP'],
+        rationale:
+          'Manages firm billing and the ledger, prepares invoices and journal drafts, and posts credit notes.',
+        makerCheckerNote:
+          'Journal commands require a firm-wide grant, and approvals belong to Finance Reviewer \u2014 never the preparer.',
+        decisionPath: path,
+      };
+    }
+    case 'CLIENT_ACCOUNTING': {
+      path.push('Work: recurring client accounting & consolidation');
+      if (answers.accountingRoleSide === 'REVIEW') {
+        path.push('Duty: independently review that accounting');
+        const role = getRoleByCode('ACCOUNTING_REVIEWER');
+        return {
+          role,
+          recommendedScopes: ['CLIENT', 'ENGAGEMENT', 'GROUP'],
+          rationale:
+            'Independently reviews scoped client accounting and consolidation work where explicitly permitted.',
+          makerCheckerNote:
+            'Never reviews their own preparation, and the Partner-approval stage stays Partner-only.',
+          decisionPath: path,
+        };
+      }
+      path.push('Duty: prepare that accounting');
+      const role = getRoleByCode('ACCOUNTING_PREPARER');
+      return {
+        role,
+        recommendedScopes: ['CLIENT', 'ENGAGEMENT', 'GROUP'],
+        rationale:
+          'Prepares scoped client accounting and consolidation work where explicitly permitted.',
+        makerCheckerNote:
+          'Pairwise segregated from the reviewer role on the same identity \u2014 holding both never creates usable review rights.',
+        decisionPath: path,
+      };
+    }
+    default: {
+      path.push('Work: audit delivery (fieldwork through sign-off)');
+      switch (answers.auditRoleLevel) {
+        case 'PARTNER': {
+          path.push('Level: engagement owner');
+          const role = getRoleByCode('PARTNER');
+          return {
+            role,
+            recommendedScopes: ['CLIENT', 'ENGAGEMENT', 'FIRM_WIDE', 'GROUP'],
+            rationale:
+              'Signs off engagement work, approves financial packages and releases, and closes review points for led clients.',
+            makerCheckerNote:
+              'Partner approvals check the currently-assigned engagement partner, not merely the role.',
+            decisionPath: path,
+          };
+        }
+        case 'MANAGER': {
+          path.push('Level: reviews & runs fieldwork');
+          const role = getRoleByCode('MANAGER');
+          return {
+            role,
+            recommendedScopes: ['CLIENT', 'ENGAGEMENT', 'FIRM_WIDE', 'GROUP'],
+            rationale:
+              'Reviews engagement work, manages planning and fieldwork, and prepares financial packages.',
+            makerCheckerNote:
+              'Review must differ from preparation; Partner-only approval stages stay out of reach.',
+            decisionPath: path,
+          };
+        }
+        case 'SENIOR': {
+          path.push('Level: coordinates & prepares');
+          const role = getRoleByCode('SENIOR');
+          return {
+            role,
+            recommendedScopes: ['ENGAGEMENT', 'CLIENT', 'FIRM_WIDE'],
+            rationale:
+              'Coordinates assigned audit work, prepares working papers and operational tasks, and uses permitted planning/intake workflows.',
+            makerCheckerNote: 'No approval authority; group scope is not available to seniors.',
+            decisionPath: path,
+          };
+        }
+        default: {
+          path.push('Level: prepares & responds to review');
+          const role = getRoleByCode('STAFF');
+          return {
+            role,
+            recommendedScopes: ['ENGAGEMENT', 'CLIENT', 'FIRM_WIDE'],
+            rationale:
+              'Prepares working papers, imports and maps source data, and responds to review points on their own work.',
+            makerCheckerNote: 'Preparer only \u2014 work is reviewed by someone else.',
+            decisionPath: path,
+          };
+        }
+      }
+    }
+  }
+}
+
+export function validateRoleRequestRow(row: RoleRequestRow): RowValidationResult {
+  const errors: string[] = [];
+  const policyWarnings: string[] = [];
+
+  const fullName = (row.fullName ?? '').trim();
+  if (!fullName) {
+    errors.push('Full name is required.');
+  } else if (fullName.length > 120) {
+    errors.push('Full name must be 120 characters or fewer.');
+  }
+
+  const emailCheck = validateWorkEmail(row.workEmail);
+  if (!emailCheck.valid && emailCheck.error) {
+    errors.push(emailCheck.error);
+  }
+  policyWarnings.push(...emailCheck.policyWarnings);
+
+  let roleDef: RoleDefinition;
+  try {
+    roleDef = getRoleByCode(row.roleRequested);
+  } catch {
+    return {
+      isValid: false,
+      errors: ['Choose a role from the catalogue.'],
+      policyWarnings,
+    };
+  }
+
+  if (row.accountType !== roleDef.accountType) {
+    errors.push(
+      `${roleDef.displayLabel} requires a ${roleDef.accountType.toLowerCase()} identity, not a ${row.accountType.toLowerCase()} identity.`
+    );
+  }
+
+  if (!roleDef.allowedScopes.includes(row.scopeType)) {
+    errors.push(
+      `${roleDef.displayLabel} does not allow ${describeScope(row.scopeType)} coverage. Allowed: ${roleDef.allowedScopes
+        .map(describeScope)
+        .join(', ')}.`
+    );
+  }
+
+  const targetRequired = SCOPES.find((s) => s.code === row.scopeType)?.targetRequired ?? row.scopeType !== 'FIRM_WIDE';
+  if (targetRequired && !row.scopeTarget.trim()) {
+    errors.push(`Name the ${describeScope(row.scopeType).toLowerCase()} this role applies to.`);
+  }
+  if (row.scopeType === 'FIRM_WIDE' && row.scopeTarget.trim()) {
+    errors.push('Whole-firm coverage has no target.');
+  }
+
+  const expiry = (row.expiry ?? '').trim();
+  if (expiry && !DATE_PATTERN.test(expiry)) {
+    errors.push('Expiry must be a date (YYYY-MM-DD).');
+  } else if (expiry && DATE_PATTERN.test(expiry)) {
+    if (row.scopeType === 'GROUP') {
+      errors.push('Group coverage never expires \u2014 it is removed by revocation, so clear the expiry.');
+    }
+    if (Number.isNaN(Date.parse(`${expiry}T00:00:00Z`)) || new Date(`${expiry}T00:00:00Z`).toISOString().slice(0, 10) !== expiry) {
+      errors.push('Expiry must be a real calendar date.');
+    } else if (expiry <= utcTodayIso()) {
+      errors.push('Expiry must be after today; access can\u2019t be timed to activate later.');
+    }
+  }
+
+  const notes = (row.notes ?? '').trim();
+  if (notes.length > 500) {
+    errors.push('Notes must be 500 characters or fewer.');
+  }
+
+  if (
+    (row.roleRequested === 'STAFF' || row.roleRequested === 'CLIENT_USER') &&
+    !expiry &&
+    row.scopeType !== 'GROUP'
+  ) {
+    policyWarnings.push(
+      'Recommended: set an expiry for hands-on delivery access so it ends on schedule instead of living on forever.'
+    );
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    policyWarnings,
+  };
+}
+
+function describeScope(scope: ScopeCode): string {
+  const def = SCOPES.find((s) => s.code === scope);
+  return def ? def.label : scope;
 }
 
 function escapeCsvCell(val: string): string {
-  const str = val ?? '';
+  // Prevent user-entered values becoming spreadsheet formulas.
+  const str = /^[\s]*[=+@\-\t\r]/.test(val ?? '') ? `'${val}` : (val ?? '');
   if (/[",\n\r]/.test(str)) {
     return `"${str.replace(/"/g, '""')}"`;
   }
@@ -575,35 +559,49 @@ function escapeCsvCell(val: string): string {
 
 export const CSV_HEADERS = [
   'Full name',
-  'Work email (the exact account used for Microsoft sign-in)',
-  'Staff or Client',
+  'Work email (Microsoft sign-in identity)',
+  'Staff or client',
   'Role requested',
-  'Scope (Firm-wide / which Client / which Engagement / which Group)',
-  'Start date',
+  'Application role',
+  'Coverage type',
+  'Coverage target',
   'Expiry (if temporary)',
-  'Approved by',
   'Notes',
 ];
 
 export function formatScopeColumn(row: RoleRequestRow): string {
-  if (row.scopeType === 'FIRM_WIDE') {
-    return 'Firm-Wide';
-  }
-  return row.scopeTarget.trim() || row.scopeType;
+  const def = SCOPES.find((s) => s.code === row.scopeType);
+  const label = def ? def.label : row.scopeType;
+  if (row.scopeType === 'FIRM_WIDE') return 'Whole firm';
+  const target = row.scopeTarget.trim();
+  return target ? `${label}: ${target}` : label;
 }
 
-export function exportRequestsToCsv(rows: RoleRequestRow[]): string {
-  const lines = [CSV_HEADERS.map(escapeCsvCell).join(',')];
+export function exportRequestsToCsv(
+  rows: RoleRequestRow[],
+  details?: Partial<RequestDetails>,
+  requestRef?: string
+): string {
+  const preamble: string[][] = [];
+  if (details) {
+    preamble.push(['Request reference', requestRef ?? '']);
+    preamble.push(['Firm / client', (details.firmName ?? '').trim()]);
+    preamble.push(['Submitted by', (details.submittedBy ?? '').trim()]);
+    preamble.push(['Contact email', (details.contactEmail ?? '').trim()]);
+    preamble.push([]);
+  }
+  const lines = preamble.map((cells) => cells.map(escapeCsvCell).join(','));
+  lines.push(CSV_HEADERS.map(escapeCsvCell).join(','));
   for (const row of rows) {
     const values = [
       row.fullName.trim(),
       row.workEmail.trim(),
       row.accountType,
-      row.roleRequested,
-      formatScopeColumn(row),
-      row.startDate.trim(),
+      getRoleByCode(row.roleRequested).displayLabel,
+      getRoleByCode(row.roleRequested).serverRole,
+      row.scopeType,
+      row.scopeTarget.trim(),
       row.expiry.trim(),
-      row.approvedBy.trim(),
       row.notes.trim(),
     ];
     lines.push(values.map(escapeCsvCell).join(','));
@@ -611,7 +609,20 @@ export function exportRequestsToCsv(rows: RoleRequestRow[]): string {
   return lines.join('\n') + '\n';
 }
 
-export function exportRequestsToMarkdownTable(rows: RoleRequestRow[]): string {
+export function exportRequestsToMarkdownTable(
+  rows: RoleRequestRow[],
+  details?: Partial<RequestDetails>,
+  requestRef?: string
+): string {
+  const out: string[] = [];
+  if (details) {
+    out.push('**Request reference:** ' + (requestRef ?? ''));
+    out.push('');
+    out.push('**Firm / client:** ' + (details.firmName ?? '').trim());
+    out.push('');
+    out.push('**Submitted by:** ' + (details.submittedBy ?? '').trim() + ' (' + (details.contactEmail ?? '').trim() + ')');
+    out.push('');
+  }
   const header = `| ${CSV_HEADERS.join(' | ')} |`;
   const divider = `| ${CSV_HEADERS.map(() => '---').join(' | ')} |`;
   const body = rows.map((row) => {
@@ -619,14 +630,15 @@ export function exportRequestsToMarkdownTable(rows: RoleRequestRow[]): string {
       row.fullName.trim(),
       `\`${row.workEmail.trim()}\``,
       row.accountType,
-      `\`${row.roleRequested}\``,
-      formatScopeColumn(row),
-      row.startDate.trim() || '—',
+      getRoleByCode(row.roleRequested).displayLabel,
+      getRoleByCode(row.roleRequested).serverRole,
+      row.scopeType,
+      row.scopeTarget.trim() || '—',
       row.expiry.trim() || '—',
-      row.approvedBy.trim() || '—',
       row.notes.trim() || '—',
     ];
     return `| ${cells.join(' | ')} |`;
   });
-  return [header, divider, ...body].join('\n');
+  out.push(header, divider, ...body);
+  return out.join('\n');
 }

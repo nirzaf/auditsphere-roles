@@ -21,12 +21,20 @@ function getD1() {
 const INSERT_SQL = `
   INSERT INTO role_requests (
     request_id, full_name, work_email, account_type, role_code,
-    scope_type, scope_target, start_date, expiry, approved_by, notes
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    scope_type, scope_target, expiry, notes,
+    request_ref, firm_name, submitted_by, contact_email
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(request_id) DO NOTHING
 `;
 
-export async function insertRoleRequests(rows: RoleRequestRow[]): Promise<RecordResult> {
+export async function insertRoleRequests(
+  rows: (RoleRequestRow & {
+    requestRef: string;
+    firmName: string;
+    submittedBy: string;
+    contactEmail: string;
+  })[]
+): Promise<RecordResult> {
   const db = getD1();
   const statements = rows.map((row) =>
     db
@@ -39,10 +47,12 @@ export async function insertRoleRequests(rows: RoleRequestRow[]): Promise<Record
         row.roleRequested,
         row.scopeType,
         row.scopeTarget,
-        row.startDate || null,
         row.expiry || null,
-        row.approvedBy || null,
-        row.notes || ''
+        row.notes || '',
+        row.requestRef,
+        row.firmName,
+        row.submittedBy,
+        row.contactEmail
       )
   );
 

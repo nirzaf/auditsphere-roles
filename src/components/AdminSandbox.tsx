@@ -38,9 +38,9 @@ const INITIAL_ROSTER: SandboxRosterUser[] = [
     grants: [
       {
         id: 'gr-1',
-        role: 'ENGAGEMENT_PARTNER',
+        role: 'PARTNER',
         scopeType: 'CLIENT',
-        scopeTarget: 'Client: Acme Corp',
+        scopeTarget: 'Client: Acme Trading Ltd',
         expiresAt: '',
       },
     ],
@@ -56,9 +56,9 @@ const INITIAL_ROSTER: SandboxRosterUser[] = [
     grants: [
       {
         id: 'gr-2',
-        role: 'AUDIT_MANAGER',
+        role: 'MANAGER',
         scopeType: 'ENGAGEMENT',
-        scopeTarget: 'Engagement: FY2026 Audit - Acme Corp',
+        scopeTarget: 'Engagement: Acme Trading Ltd — FY2026 statutory audit',
         expiresAt: '2027-04-30',
       },
     ],
@@ -92,10 +92,10 @@ const INITIAL_ROSTER: SandboxRosterUser[] = [
     grants: [
       {
         id: 'gr-4',
-        role: 'CLIENT_PRIMARY',
+        role: 'CLIENT_USER',
         scopeType: 'CLIENT',
-        scopeTarget: 'Client: Acme Corp',
-        expiresAt: '2027-06-30',
+        scopeTarget: 'Client: Acme Trading Ltd',
+        expiresAt: '',
       },
     ],
   },
@@ -105,14 +105,14 @@ const INITIAL_ROSTER: SandboxRosterUser[] = [
     workEmail: 's.miller@client-example.com',
     accountType: 'Client',
     bindingStatus: 'PENDING_INVITATION',
-    entraOid: 'Awaiting first Microsoft Entra ID sign-in',
+    entraOid: 'Awaiting first Microsoft sign-in',
     invitationToken: 'inv-sm-2026-905',
     grants: [
       {
         id: 'gr-5',
-        role: 'CLIENT_CONTRIBUTOR',
+        role: 'CLIENT_USER',
         scopeType: 'ENGAGEMENT',
-        scopeTarget: 'Engagement: FY2026 Audit - Acme Corp',
+        scopeTarget: 'Engagement: Acme Trading Ltd — FY2026 statutory audit',
         expiresAt: '2027-03-31',
       },
     ],
@@ -132,7 +132,7 @@ export const AdminSandbox: React.FC = () => {
   const [bindMessage, setBindMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
 
   // Assign Role & Scope state
-  const [assignRole, setAssignRole] = useState<RoleCode>('CLIENT_PRIMARY');
+  const [assignRole, setAssignRole] = useState<RoleCode>('CLIENT_USER');
   const [assignScopeType, setAssignScopeType] = useState<ScopeCode>('CLIENT');
   const [assignScopeTarget, setAssignScopeTarget] = useState('Client: Acme Corp');
   const [assignExpiry, setAssignExpiry] = useState('2027-06-30');

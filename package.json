@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "test": "node --test src/utils/roleAssessor.test.ts",
     "dev": "vite dev",
     "build": "vite build && tsc --noEmit",
     "preview": "vite preview",
