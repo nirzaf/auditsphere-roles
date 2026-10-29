@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "auditsphere-roles",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "@tanstack/react-start/server-entry",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "auditsphere-roles",
+      "database_id": "abb5cffb-fd03-460a-a7cd-7bc4eaeaac16",
+      "migrations_dir": "migrations"
+    }
+  ]
+}

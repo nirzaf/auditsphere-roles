@@ -36,6 +36,7 @@ import {
 } from './components/Diagrams.tsx';
 import { SimulatorsSection } from './components/SimulatorsSection.tsx';
 import { AdminSandbox } from './components/AdminSandbox.tsx';
+import { recordRoleRequests } from './server/requests.functions';
 import {
   AlertTriangle,
   Check,
@@ -127,6 +128,11 @@ export default function App() {
   });
   const [draftError, setDraftError] = useState<string | null>(null);
   const [copiedMarkdown, setCopiedMarkdown] = useState(false);
+
+  // Section 9 D1 recording status per row id
+  const [recordingStatus, setRecordingStatus] = useState<
+    Record<string, 'saving' | 'recorded' | 'error'>
+  >({});
 
   // Section 12 FAQ category filter
   const [faqCategory, setFaqCategory] = useState<string>('ALL');
@@ -233,6 +239,7 @@ export default function App() {
       workEmail: draftRow.workEmail.trim().toLowerCase(),
     };
     setRequestRows((prev) => [...prev, created]);
+    persistRow(created);
     setDraftRow((prev) => ({
       ...prev,
       fullName: '',
@@ -243,6 +250,21 @@ export default function App() {
 
   const handleRemoveRequestRow = (id: string) => {
     setRequestRows((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  // Record a validated row in Cloudflare D1 and track its state in the UI.
+  const persistRow = (row: RoleRequestRow) => {
+    setRecordingStatus((prev) => ({ ...prev, [row.id]: 'saving' }));
+    recordRoleRequests({ data: { rows: [row] } })
+      .then((result) => {
+        setRecordingStatus((prev) => ({
+          ...prev,
+          [row.id]: result.rejected.length > 0 || result.recorded === 0 ? 'error' : 'recorded',
+        }));
+      })
+      .catch(() => {
+        setRecordingStatus((prev) => ({ ...prev, [row.id]: 'error' }));
+      });
   };
 
   const handleDownloadCsv = () => {
@@ -1560,7 +1582,7 @@ export default function App() {
                     How to Fill in the Role Assignment Request Form
                   </h2>
                   <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-3xl">
-                    Pre-loaded with the 5 canonical worked examples (Sarah Jenkins, Marcus Vance, Elena Rostova, David Chen, Sarah Miller). Add your own rows, validate corporate emails and Separation of Duties, and export to CSV or Markdown.
+                    Pre-loaded with the 5 canonical worked examples (Sarah Jenkins, Marcus Vance, Elena Rostova, David Chen, Sarah Miller). Add your own rows, validate corporate emails and Separation of Duties, and export to CSV or Markdown. Every row you add is recorded to the AuditSphereOps role-request log on Cloudflare D1.
                   </p>
                 </div>
 
@@ -1875,6 +1897,32 @@ export default function App() {
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
+                            {recordingStatus[row.id] === 'saving' && (
+                              <span
+                                title="Recording in Cloudflare D1..."
+                                className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold whitespace-nowrap"
+                              >
+                                Saving…
+                              </span>
+                            )}
+                            {recordingStatus[row.id] === 'recorded' && (
+                              <span
+                                title="Recorded in Cloudflare D1"
+                                className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 font-semibold whitespace-nowrap"
+                              >
+                                Recorded ✓
+                              </span>
+                            )}
+                            {recordingStatus[row.id] === 'error' && (
+                              <button
+                                type="button"
+                                onClick={() => persistRow(row)}
+                                title="Recording in Cloudflare D1 failed — click to retry"
+                                className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 font-semibold whitespace-nowrap cursor-pointer"
+                              >
+                                Save Failed – Retry
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

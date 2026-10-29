@@ -1,0 +1,4 @@
+allowBuilds:
+  # wrangler pulls esbuild & workerd, both of which ship install scripts
+  esbuild: true
+  workerd: true
