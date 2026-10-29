@@ -2,3 +2,8 @@ allowBuilds:
   # wrangler pulls esbuild & workerd, both of which ship install scripts
   esbuild: true
   workerd: true
+
+# Exact-version exception for the security update that removes undici <7.30.1.
+# Keep the release-age policy in place for every other package/version.
+minimumReleaseAgeExclude:
+  - '@cloudflare/vite-plugin@1.66.0'
