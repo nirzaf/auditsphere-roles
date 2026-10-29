@@ -3,6 +3,7 @@ import { ArrowRight, Check, Download, Plus, ShieldCheck, Trash2, Users } from 'l
 import { ROLES, SCOPES } from './data/rolesData.ts';
 import type { AccountType, RequestDetails, RoleCode, RoleRequestRow, ScopeCode } from './data/rolesData.ts';
 import { detectSeparationOfDutiesWarnings, exportRequestsToCsv, formatScopeColumn, getRoleByCode, validateRequestDetails, validateRoleRequestRow } from './utils/roleAssessor.ts';
+import { PrivilegeHierarchy } from './components/PrivilegeHierarchy.tsx';
 
 const administratorEmail = (import.meta.env.VITE_ACCESS_ADMIN_EMAIL ?? '').trim();
 const deliveryEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(administratorEmail) && !administratorEmail.endsWith('@example.com') ? administratorEmail : '';
@@ -90,6 +91,7 @@ export default function App() {
 
       <section id="roles" className="section-block roles-print">
         <div className="section-heading"><div><span className="eyebrow">01 / Responsibilities</span><h2>A role for the work they do.</h2><p>Choose only the responsibilities your team needs. One person can have more than one role.</p></div><button className="text-button no-print" onClick={() => window.print()}><Download size={16} /> Print roles guide</button></div>
+        <details open className="reference privilege-reference"><summary>User types & privilege hierarchy</summary><PrivilegeHierarchy groups={groups} /></details>
         <div className="role-groups">{groups.map(group => <div key={group.title} className="role-group"><h3>{group.title}</h3>{group.codes.map(code => { const item = getRoleByCode(code); return <details key={code} className="role-card"><summary><span>{item.displayLabel}<small>{item.responsibilities[0]}</small></span><Plus size={16} /></summary><div className="role-details"><p>{item.summary}</p><ul>{item.responsibilities.slice(0, 3).map(text => <li key={text}>{text}</li>)}</ul><p><strong>Approvals:</strong> {item.approvals}</p><p><strong>Keep in mind:</strong> {item.restriction}</p><button className="text-button no-print" onClick={() => { chooseRole(code); formRef.current?.scrollIntoView({ behavior: 'smooth' }); }}>Choose this role <ArrowRight size={15} /></button></div></details>; })}</div>)}</div>
         <details className="reference"><summary>Compare all roles</summary><div className="table-scroll"><table><thead><tr><th>Role</th><th>Main responsibility</th><th>Important restriction</th></tr></thead><tbody>{ROLES.map(r => <tr key={r.code}><th scope="row">{r.displayLabel}</th><td>{r.summary}</td><td>{r.restriction}</td></tr>)}</tbody></table></div></details>
       </section>
